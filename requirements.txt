@@ -1,0 +1,9 @@
+coverage
+duckduckgo-search
+faker
+pydantic
+pypirc
+pytest
+PyYAML
+ruff
+tiktoken
