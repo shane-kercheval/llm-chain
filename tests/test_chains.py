@@ -141,7 +141,6 @@ class LLM(ABC):
             return None
         return sum(x.total_tokens for x in self.history)
 
-
     @property
     def total_prompt_tokens(self) -> str:
         """
