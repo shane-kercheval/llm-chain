@@ -1,6 +1,14 @@
 """Contains models."""
-from collections.abc import Callable
-from llm_chain.base import LLM, MessageMetaData
+from llm_chain.base import LLM, MemoryBuffer, MessageMetaData
+
+
+
+# class MemoryStrategy()
+
+# # TODO: test with mock
+# class MemoryBufferStrategy:
+
+
 
 
 class OpenAIChat(LLM):
@@ -18,7 +26,7 @@ class OpenAIChat(LLM):
             # this isn't great, because it forces the user to understand how messages work
             # also, we'll need to extract the first system-message and then filter on the rest
             # again, it forces the user to understand this so they know how to implement.
-            memory_filter: Callable[[list[dict]], list[dict]] | None = None,
+            memory_strategy: MemoryBuffer | None = None,  # noqa
             ) -> None:
         # copied from https://github.com/hwchase17/langchain/blob/master/langchain/callbacks/openai_info.py
         model_cost_per_1k_tokens = {
@@ -55,26 +63,33 @@ class OpenAIChat(LLM):
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.cost_per_token = model_cost_per_1k_tokens[model_name] / 1000
-        self.memory_filter = memory_filter
-        self._messages=[
-            {'role': 'system', 'content': system_message},
-        ]
+        self.memory_strategy = memory_strategy
+        self.system_message = {'role': 'system', 'content': system_message}
         self._previous_memory = None
 
     def _run(self, prompt: str) -> MessageMetaData:
         import openai
-        self._messages += [{'role': 'user', 'content': prompt}]
-        self._previous_memory = self._messages.copy()
-        if self.memory_filter:
-            self._previous_memory = self.memory_filter(self._previous_memory)
+        # initial message
+        messages = [self.system_message]
+        # build up messages from history
+        memory = self.history.copy()
+        if self.memory_strategy:
+            memory = self.memory_strategy(history=memory)
+        for message in memory:
+            messages += [
+                {'role': 'user', 'content': message.prompt},
+                {'role': 'assistant', 'content': message.response},
+            ]
+        # add latest prompt to messages
+        messages += [{'role': 'user', 'content': prompt}]
         response = openai.ChatCompletion.create(
             model=self.model_name,
-            messages=self._previous_memory,
+            messages=messages,
             temperature=self.temperature,
             max_tokens=self.max_tokens,
         )
+        self._previous_memory = messages
         response_message = response['choices'][0]['message'].content
-        self._messages += [{'role': 'assistant', 'content': response_message}]
         return MessageMetaData(
             prompt=prompt,
             response=response_message,
