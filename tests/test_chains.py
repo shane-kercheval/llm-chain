@@ -3,7 +3,8 @@ from collections.abc import Callable
 from dotenv import load_dotenv
 import random
 from faker import Faker
-from llm_chain.base import LLM, MemoryBufferWindow, MessageMetaData
+from llm_chain.base import LLM, MessageMetaData
+from llm_chain.memory import MemoryBufferWindow
 from llm_chain.models import OpenAIChat
 
 

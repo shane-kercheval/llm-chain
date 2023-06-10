@@ -2,15 +2,6 @@
 from llm_chain.base import LLM, MemoryBuffer, MessageMetaData
 
 
-
-# class MemoryStrategy()
-
-# # TODO: test with mock
-# class MemoryBufferStrategy:
-
-
-
-
 class OpenAIChat(LLM):
     """
     Input: list of messages expected by OpenAI i.e. list[dict].
@@ -99,4 +90,3 @@ class OpenAIChat(LLM):
             total_tokens=response['usage'].total_tokens,
             cost=response['usage'].total_tokens * self.cost_per_token,
         )
-
