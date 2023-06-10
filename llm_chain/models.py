@@ -66,9 +66,6 @@ class OpenAIChat(ChatModel):
             temperature: float = 0,
             max_tokens: int = 2000,
             system_message: str = 'You are a helpful assistant.',
-            # this isn't great, because it forces the user to understand how messages work
-            # also, we'll need to extract the first system-message and then filter on the rest
-            # again, it forces the user to understand this so they know how to implement.
             memory_strategy: MemoryBuffer | None = None,  # noqa
             ) -> None:
         """TODO."""
@@ -109,6 +106,13 @@ class OpenAIChat(ChatModel):
         self._previous_memory = None
 
     def _run(self, prompt: str) -> MessageMetaData:
+        """
+        `openai.ChatCompletion.create` expects a list of messages with various roles (i.e. system,
+        user, assistant). This function builds the list of messages based on the history of
+        messages and based on an optional 'memory_strategy' that filters the history based on
+        it's own logic. The `system_message` is always the first message regardless if a
+        `memory_strategy` is passed in.
+        """
         import openai
         # initial message
         messages = [self.system_message]

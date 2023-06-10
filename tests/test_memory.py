@@ -1,14 +1,14 @@
 """tests llm_chain/memory.py."""
 
 from llm_chain.base import MessageMetaData
-from llm_chain.memory import MemoryBufferWindow
+from llm_chain.memory import MemoryBufferMessageWindow
 from llm_chain.models import OpenAIChat
 
 
 def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
     openai_llm = OpenAIChat(
         model_name='gpt-3.5-turbo',
-        memory_strategy=MemoryBufferWindow(last_n_messages=0),
+        memory_strategy=MemoryBufferMessageWindow(last_n_messages=0),
     )
     assert openai_llm.previous_message is None
     assert openai_llm.previous_prompt is None
@@ -98,7 +98,7 @@ def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
 def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
     openai_llm = OpenAIChat(
         model_name='gpt-3.5-turbo',
-        memory_strategy=MemoryBufferWindow(last_n_messages=1),
+        memory_strategy=MemoryBufferMessageWindow(last_n_messages=1),
     )
     assert openai_llm.previous_message is None
     assert openai_llm.previous_prompt is None
