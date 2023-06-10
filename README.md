@@ -80,6 +80,7 @@ chat = OpenAIChat()
 vector_db = Chroma()
 
 embedding_chain = Chain([
+    
     PDFLoader('./path/to/pdf_file.pdf'),  # loads the pdf into memory and extracts the text; returns a list of Documents
     TextSplitter(chunk_size=500),  # splits the text into chunks, returns a list of Documents
     OpenAIEmbeddingsModel(),  # Expects a list of documents to embed (or str or single doc?); returns Embedding for each doc

@@ -1,44 +1,14 @@
 """TBD."""
-from collections.abc import Callable
-from dotenv import load_dotenv
-import random
-from faker import Faker
-from llm_chain.base import LLM, MessageMetaData
+# from llm_chain.base import Document, EmbeddingsMetaData, EmbeddingsModel
+import numpy as np
+from llm_chain.base import Document, EmbeddingsMetaData, MessageMetaData
 from llm_chain.memory import MemoryBufferWindow
 from llm_chain.models import OpenAIChat
+from tests.conftest import MockChat, MockEmbeddings
 
 
-class MockLLM(LLM):
-    """Used for unit tests to mock the behavior of an LLM."""
-
-    def __init__(
-            self,
-            model_type: str,
-            token_counter: Callable[[str], int] | None = None,
-            cost_per_token: float | None = None) -> None:
-        super().__init__(model_type=model_type)
-        self.token_counter = token_counter
-        self.cost_per_token = cost_per_token
-
-    def _run(self, prompt: str) -> MessageMetaData:
-        fake = Faker()
-        response = ' '.join([fake.word() for _ in range(random.randint(10, 100))])
-        prompt_tokens = self.token_counter(prompt) if self.token_counter else None
-        response_tokens = self.token_counter(response) if self.token_counter else None
-        total_tokens = prompt_tokens + response_tokens if self.token_counter else None
-        cost = total_tokens * self.cost_per_token if self.cost_per_token else None
-        return MessageMetaData(
-            prompt=prompt,
-            response=response,
-            total_tokens=total_tokens,
-            prompt_tokens=prompt_tokens,
-            response_tokens=response_tokens,
-            cost=cost,
-            metadata={'model_name': 'mock'},
-        )
-
-def test_model__no_token_counter_or_costs():  # noqa
-    model = MockLLM(model_type='chat', token_counter=None, cost_per_token=None)
+def test_ChatModel__no_token_counter_or_costs():  # noqa
+    model = MockChat(token_counter=None, cost_per_token=None)
     assert model.previous_message is None
     assert model.previous_prompt is None
     assert model.previous_response is None
@@ -103,10 +73,10 @@ def test_model__no_token_counter_or_costs():  # noqa
     assert model.total_prompt_tokens is None
     assert model.total_response_tokens is None
 
-def test_model__has_token_counter_and_costs():  # noqa
+def test_ChatModel__has_token_counter_and_costs():  # noqa
     token_counter = len
     cost_per_token = 3
-    model = MockLLM(model_type='chat', token_counter=token_counter, cost_per_token=cost_per_token)
+    model = MockChat(token_counter=token_counter, cost_per_token=cost_per_token)
     assert model.previous_message is None
     assert model.previous_prompt is None
     assert model.previous_response is None
@@ -185,8 +155,6 @@ def test_model__has_token_counter_and_costs():  # noqa
     assert model.total_response_tokens == expected_response_tokens + previous_response_tokens
 
 def test_OpenAIChat():  # noqa
-    load_dotenv()
-
     openai_llm = OpenAIChat(model_name='gpt-3.5-turbo')
     assert openai_llm.previous_message is None
     assert openai_llm.previous_prompt is None
@@ -273,8 +241,6 @@ def test_OpenAIChat():  # noqa
     assert openai_llm.total_response_tokens == previous_response_tokens + message.response_tokens
 
 def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
-    load_dotenv()
-
     openai_llm = OpenAIChat(
         model_name='gpt-3.5-turbo',
         memory_strategy=MemoryBufferWindow(last_n_messages=0),
@@ -365,8 +331,6 @@ def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
     assert openai_llm.total_response_tokens == previous_response_tokens + message.response_tokens
 
 def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
-    load_dotenv()
-
     openai_llm = OpenAIChat(
         model_name='gpt-3.5-turbo',
         memory_strategy=MemoryBufferWindow(last_n_messages=1),
@@ -540,3 +504,152 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == 0.002 / 1000
+
+def test_EmbeddingsModel__no_costs():  # noqa
+    model = MockEmbeddings(token_counter=len, cost_per_token=None)
+    assert model.total_cost is None
+    assert model.total_tokens is None
+
+    ####
+    # first interaction
+    ####
+    doc_content_0 = "This is a doc."
+    doc_content_1 = "This is a another doc."
+    docs = [
+        Document(content=doc_content_0),
+        Document(content=doc_content_1),
+    ]
+    new_docs = model(docs)
+    expected_tokens = sum(len(x.content) for x in docs)
+    assert isinstance(new_docs, list)
+    assert isinstance(new_docs[0], Document)
+    assert len(new_docs) == len(docs)
+    assert docs[0].content == doc_content_0
+    assert docs[1].content == doc_content_1
+    assert new_docs[0].content == doc_content_0
+    assert new_docs[1].content == doc_content_1
+    assert all(isinstance(x.embedding, np.ndarray) for x in new_docs)
+
+    assert len(model.history) == 1
+    last_metadata = model.history[0]
+    assert isinstance(last_metadata, EmbeddingsMetaData)
+    assert last_metadata.total_tokens == expected_tokens
+    assert last_metadata.cost is None
+
+    assert model.total_tokens == expected_tokens
+    assert model.total_cost is None
+
+    previous_tokens = model.total_tokens
+
+    ####
+    # second interaction
+    ####
+    doc_content_2 = "This is a doc for a second call."
+    doc_content_3 = "This is a another doc for a second call."
+    docs = [
+        Document(content=doc_content_2),
+        Document(content=doc_content_3),
+    ]
+    new_docs = model(docs)
+    expected_tokens = sum(len(x.content) for x in docs)
+    assert isinstance(new_docs, list)
+    assert isinstance(new_docs[0], Document)
+    assert len(new_docs) == len(docs)
+    assert docs[0].content == doc_content_2
+    assert docs[1].content == doc_content_3
+    assert new_docs[0].content == doc_content_2
+    assert new_docs[1].content == doc_content_3
+    assert all(isinstance(x.embedding, np.ndarray) for x in new_docs)
+
+    assert len(model.history) == 2
+    first_meata = model.history[0]
+    assert isinstance(first_meata, EmbeddingsMetaData)
+    assert first_meata.total_tokens == previous_tokens
+    assert first_meata.cost is None
+
+    last_metadata = model.history[1]
+    assert isinstance(last_metadata, EmbeddingsMetaData)
+    assert last_metadata.total_tokens == expected_tokens
+    assert last_metadata.cost is None
+
+    assert model.total_tokens == previous_tokens + expected_tokens
+    assert model.total_cost is None
+
+def test_EmbeddingsModel__with_costs():  # noqa
+    cost_per_token = 3
+    model = MockEmbeddings(token_counter=len, cost_per_token=cost_per_token)
+    assert model.total_cost is None
+    assert model.total_tokens is None
+
+    ####
+    # first interaction
+    ####
+    doc_content_0 = "This is a doc."
+    doc_content_1 = "This is a another doc."
+    docs = [
+        Document(content=doc_content_0),
+        Document(content=doc_content_1),
+    ]
+    new_docs = model(docs)
+    expected_tokens = sum(len(x.content) for x in docs)
+    expected_cost = expected_tokens * cost_per_token
+    assert isinstance(new_docs, list)
+    assert isinstance(new_docs[0], Document)
+    assert len(new_docs) == len(docs)
+    assert docs[0].content == doc_content_0
+    assert docs[1].content == doc_content_1
+    assert new_docs[0].content == doc_content_0
+    assert new_docs[1].content == doc_content_1
+    assert all(isinstance(x.embedding, np.ndarray) for x in new_docs)
+
+    assert len(model.history) == 1
+    last_metadata = model.history[0]
+    assert isinstance(last_metadata, EmbeddingsMetaData)
+    assert last_metadata.total_tokens == expected_tokens
+    assert last_metadata.cost == expected_cost
+
+    assert model.total_tokens == expected_tokens
+    assert model.total_cost == expected_cost
+
+    previous_tokens = model.total_tokens
+    previous_cost = model.total_cost
+
+    ####
+    # second interaction
+    ####
+    doc_content_2 = "This is a doc for a second call."
+    doc_content_3 = "This is a another doc for a second call."
+    docs = [
+        Document(content=doc_content_2),
+        Document(content=doc_content_3),
+    ]
+    new_docs = model(docs)
+    expected_tokens = sum(len(x.content) for x in docs)
+    expected_cost = expected_tokens * cost_per_token
+    assert isinstance(new_docs, list)
+    assert isinstance(new_docs[0], Document)
+    assert len(new_docs) == len(docs)
+    assert docs[0].content == doc_content_2
+    assert docs[1].content == doc_content_3
+    assert new_docs[0].content == doc_content_2
+    assert new_docs[1].content == doc_content_3
+    assert all(isinstance(x.embedding, np.ndarray) for x in new_docs)
+
+    assert len(model.history) == 2
+    first_meata = model.history[0]
+    assert isinstance(first_meata, EmbeddingsMetaData)
+    assert first_meata.total_tokens == previous_tokens
+    assert first_meata.cost == previous_cost
+
+    last_metadata = model.history[1]
+    assert isinstance(last_metadata, EmbeddingsMetaData)
+    assert last_metadata.total_tokens == expected_tokens
+    assert last_metadata.cost == expected_cost
+
+    assert model.total_tokens == previous_tokens + expected_tokens
+    assert model.total_cost == previous_cost + expected_cost
+
+
+# TODO: implement rety (refactor call to openai.ChatCompletion.create)
+# TODO: test embeddings when text size is larger than context
+# TODO: create mockembeddingsmodel - test embeddings without cost
