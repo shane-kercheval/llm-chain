@@ -29,7 +29,7 @@ class MessageMetaData(BaseModel):
 
     def __init__(
             self,
-            token_counter: Callable | None = None,
+            token_counter: Callable[[str], int] | None = None,
             cost_per_token: float | None = None,
             **data: Any):  # noqa: ANN401
         """
@@ -63,7 +63,7 @@ class LLM(ABC):
     def __init__(
             self,
             model_type: str,
-            token_counter: Callable | None = None,
+            token_counter: Callable[[str], int] | None = None,
             cost_per_token: float | None = None) -> None:
         """
         Init method.
@@ -186,7 +186,7 @@ class MockLLM(LLM):
     def __init__(
             self,
             model_type: str,
-            token_counter: Callable | None = None,
+            token_counter: Callable[[str], int] | None = None,
             cost_per_token: float | None = None) -> None:
         super().__init__(
             model_type=model_type,
