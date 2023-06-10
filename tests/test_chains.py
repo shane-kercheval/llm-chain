@@ -3,7 +3,7 @@
 import numpy as np
 from llm_chain.base import Document, EmbeddingsMetaData, MessageMetaData
 from llm_chain.memory import MemoryBufferWindow
-from llm_chain.models import OpenAIChat
+from llm_chain.models import OpenAIChat, OpenAIEmbeddings
 from tests.conftest import MockChat, MockEmbeddings
 
 
@@ -650,6 +650,78 @@ def test_EmbeddingsModel__with_costs():  # noqa
     assert model.total_cost == previous_cost + expected_cost
 
 
+def test_OpenAIEmbeddings():  # noqa
+    model = OpenAIEmbeddings(model_name='text-embedding-ada-002')
+    assert model.total_cost is None
+    assert model.total_tokens is None
+
+    ####
+    # first interaction
+    ####
+    doc_content_0 = "This is a doc."
+    doc_content_1 = "This is a another doc."
+    docs = [
+        Document(content=doc_content_0),
+        Document(content=doc_content_1),
+    ]
+    new_docs = model(docs)
+    expected_cost = model.history[0].total_tokens * model.cost_per_token
+    assert isinstance(new_docs, list)
+    assert isinstance(new_docs[0], Document)
+    assert len(new_docs) == len(docs)
+    assert docs[0].content == doc_content_0
+    assert docs[1].content == doc_content_1
+    assert new_docs[0].content == doc_content_0
+    assert new_docs[1].content == doc_content_1
+    assert all(isinstance(x.embedding, list) for x in new_docs)
+    assert all(len(x.embedding) > 100 for x in new_docs)
+
+    assert len(model.history) == 1
+    last_metadata = model.history[0]
+    assert isinstance(last_metadata, EmbeddingsMetaData)
+    assert last_metadata.total_tokens > 0
+    assert last_metadata.cost == expected_cost
+
+    assert model.total_tokens == last_metadata.total_tokens
+    assert model.total_cost == expected_cost
+
+    previous_tokens = model.total_tokens
+    previous_cost = model.total_cost
+
+    ####
+    # second interaction
+    ####
+    doc_content_2 = "This is a doc for a second call."
+    doc_content_3 = "This is a another doc for a second call."
+    docs = [
+        Document(content=doc_content_2),
+        Document(content=doc_content_3),
+    ]
+    new_docs = model(docs)
+    expected_cost = model.history[1].total_tokens * model.cost_per_token
+    assert isinstance(new_docs, list)
+    assert isinstance(new_docs[0], Document)
+    assert len(new_docs) == len(docs)
+    assert docs[0].content == doc_content_2
+    assert docs[1].content == doc_content_3
+    assert new_docs[0].content == doc_content_2
+    assert new_docs[1].content == doc_content_3
+    assert all(isinstance(x.embedding, list) for x in new_docs)
+
+    assert len(model.history) == 2
+    first_meata = model.history[0]
+    assert isinstance(first_meata, EmbeddingsMetaData)
+    assert first_meata.total_tokens == previous_tokens
+    assert first_meata.cost == previous_cost
+
+    last_metadata = model.history[1]
+    assert isinstance(last_metadata, EmbeddingsMetaData)
+    assert last_metadata.total_tokens > 0
+    assert last_metadata.cost == expected_cost
+
+    assert model.total_tokens == previous_tokens + last_metadata.total_tokens
+    assert model.total_cost == previous_cost + expected_cost
+
 # TODO: implement rety (refactor call to openai.ChatCompletion.create)
 # TODO: test embeddings when text size is larger than context
-# TODO: create mockembeddingsmodel - test embeddings without cost
+# TODO: test MemoryBufferTokenWindow
