@@ -203,6 +203,11 @@ def test_OpenAIChat():  # noqa
     assert isinstance(response, str)
     assert len(response) > 1
 
+    # previous memory is the input to ChatGPT
+    assert openai_llm._previous_memory[0]['role'] == 'system'
+    assert openai_llm._previous_memory[-1]['role'] == 'user'
+    assert openai_llm._previous_memory[-1]['content'] == prompt
+
     assert len(openai_llm.history) == 1
     message = openai_llm.previous_message
     assert isinstance(message, MessageMetaData)
@@ -222,6 +227,8 @@ def test_OpenAIChat():  # noqa
     assert openai_llm.total_prompt_tokens == message.prompt_tokens
     assert openai_llm.total_response_tokens == message.response_tokens
 
+    previous_prompt = prompt
+    previous_response = response
     previous_cost = message.cost
     previous_total_tokens = message.total_tokens
     previous_prompt_tokens = message.prompt_tokens
@@ -234,6 +241,15 @@ def test_OpenAIChat():  # noqa
     response = openai_llm(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
+
+    # previous memory is the input to ChatGPT
+    assert openai_llm._previous_memory[0]['role'] == 'system'
+    assert openai_llm._previous_memory[1]['role'] == 'user'
+    assert openai_llm._previous_memory[1]['content'] == previous_prompt
+    assert openai_llm._previous_memory[2]['role'] == 'assistant'
+    assert openai_llm._previous_memory[2]['content'] == previous_response
+    assert openai_llm._previous_memory[3]['role'] == 'user'
+    assert openai_llm._previous_memory[3]['content'] == prompt
 
     assert len(openai_llm.history) == 2
     message = openai_llm.previous_message
