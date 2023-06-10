@@ -2,7 +2,7 @@
 
 Simple and extensible LLM Chaining (pre-alpha)
 
-**NOTE: This package is tested on Python `3.9`, `3.10`, `3.11`**
+**NOTE: This package is tested on Python `3.10` and `3.11`**
 
 - package source in `/llm_chain`
 - unit tests in `/tests`
