@@ -1,9 +1,11 @@
 coverage
 duckduckgo-search
 faker
+openai
 pydantic
 pypirc
 pytest
+python-dotenv
 PyYAML
 ruff
 tiktoken
