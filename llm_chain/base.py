@@ -138,3 +138,12 @@ class LLM(ABC):
         if self.previous_message and self.previous_message.cost:
             return sum(x.cost for x in self.history)
         return None
+
+
+class MemoryBuffer(ABC):
+    """TBD."""
+
+    @abstractmethod
+    def __call__(self, history: list[MessageMetaData]) -> list[MessageMetaData]:
+        """TBD."""
+
