@@ -9,6 +9,17 @@ Simple and extensible LLM Chaining (pre-alpha)
 
 ---
 
+## TODO
+
+- implement PDFLoadder
+- implement vectordb store
+- implement DocumentPrompt (stuff docs + query)
+- implement async
+- implement retry
+
+---
+
+
 ## Installing
 
 ```commandline
@@ -44,6 +55,20 @@ chat.history()
 ```
 
 The message `Hello chatbot.` is given to the first link in the chain and is propagated according to the logic of types of links in the chain.
+
+
+
+Text -> Documents -> Chunks -> Embeddings -> VectorDB-store
+
+
+DocumentsPrompt()(docs, query)
+
+# stuff all the documents into the prompt
+DocumentsStuffPrompt()(docs, query)
+
+
+query/text -> Embeddings -> VectorDB-search -> Chunks -> (docs + query)??? -> Chat -> response/text
+hmm.. does chain store initial input and assume it is a query for subsequent calls
 
 
 

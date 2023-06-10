@@ -215,4 +215,3 @@ class MemoryBuffer(ABC):
     @abstractmethod
     def __call__(self, history: list[MessageMetaData]) -> list[MessageMetaData]:
         """TODO."""
-
