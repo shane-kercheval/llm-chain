@@ -1,11 +1,63 @@
 """Contains models."""
-from llm_chain.base import LLM, MemoryBuffer, MessageMetaData
+from collections.abc import Callable
+from llm_chain.base import ChatModel, Document, EmbeddingsMetaData, EmbeddingsModel, \
+    MemoryBuffer, MessageMetaData
 
 
-class OpenAIChat(LLM):
+class OpenAIEmbeddings(EmbeddingsModel):
     """
-    Input: list of messages expected by OpenAI i.e. list[dict].
-    Output: the response.
+    Input: list of documents
+    Output: list of documents with embeddings.
+    """
+
+    def __init__(
+            self,
+            model_name: str,
+            doc_prep: Callable[[str], str] = lambda x: x.strip().replace('\n', ' '),
+            ) -> None:
+        """
+        TODO.
+
+        NOTE: TODO: cleanup explaination; running this on docs creates side effect and populates
+        .embedding property and returns the same list of objects
+
+        Args:
+            model_name: e.g. 'text-embedding-ada-002'
+            doc_prep:
+                function that cleans the text of each doc before creating embeddings.
+        """
+        super().__init__()
+        model_cost_per_1k_tokens = {
+            'text-embedding-ada-002': 0.0004,
+        }
+        self.cost_per_token = model_cost_per_1k_tokens[model_name] / 1000
+        self.model_name = model_name
+        self.doc_prep = doc_prep
+
+    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsMetaData]:
+        """
+        TODO.
+
+        Populates the `embedding` property on the Document.
+        """
+        import openai
+        texts = [self.doc_prep(x.content) for x in docs]
+        response = openai.Embedding.create(input = texts, model=self.model_name)
+        total_tokens = response['usage']['total_tokens']
+        embeddings = [x['embedding'] for x in response['data']]
+        for doc, embedding in zip(docs, embeddings):
+            doc.embedding = embedding
+        metadata = EmbeddingsMetaData(
+            total_tokens=total_tokens,
+            cost=self.cost_per_token * total_tokens,
+        )
+        return docs, metadata
+
+
+class OpenAIChat(ChatModel):
+    """
+    Input: prompt/query (string).
+    Output: the response (string).
     """
 
     def __init__(
@@ -19,7 +71,10 @@ class OpenAIChat(LLM):
             # again, it forces the user to understand this so they know how to implement.
             memory_strategy: MemoryBuffer | None = None,  # noqa
             ) -> None:
+        """TODO."""
+        # TODO: doc string model_name e.g. 'gpt-3.5-turbo'
         # copied from https://github.com/hwchase17/langchain/blob/master/langchain/callbacks/openai_info.py
+        super().__init__()
         model_cost_per_1k_tokens = {
             'gpt-4': 0.03,
             'gpt-4-0314': 0.03,
@@ -45,11 +100,6 @@ class OpenAIChat(LLM):
             'curie-finetuned': 0.012,
             'davinci-finetuned': 0.12,
         }
-        super().__init__(
-            model_type='chat',
-            # token_counter=None,
-            # cost_per_token=model_cost_per_1k_tokens[model_name] / 1000,
-        )
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens

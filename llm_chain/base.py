@@ -8,8 +8,6 @@ class MessageMetaData(BaseModel):
     A MessageMetaData is a single interaction with an LLM (i.e. a prompt and a response. It's used
     to capture additional information about that interaction such as the number of tokens used and
     the corresponding costs.
-
-    prompt: could be string representing a message
     """
 
     prompt: str
@@ -21,7 +19,96 @@ class MessageMetaData(BaseModel):
     cost: float | None = None
 
 
-class LLM(ABC):
+class EmbeddingsMetaData(BaseModel):
+    """TODO."""
+
+    total_tokens: int
+    cost: float | None = None
+
+
+class Document(BaseModel):
+    """TODO."""
+
+    content: str
+    metadata: dict | None
+    embedding: list | None  # pydantic doesn't seem to support np.ndarray...
+
+
+class LargeLanguageModel(ABC):
+    """
+    A Model (e.g. ChatGPT-3, or `text-embedding-ada-002` (embeddings model)) is a class that is
+    callable and given some input (e.g. prompt (chat) or documents (embeddings)) and returns a
+    response (e.g. string or documents).
+    It has helper methods that track the history/usage of the how an instantiated model
+    has been used (e.g. processing time, tokens used, or costs incurred; although not all models
+    have direct costs like ChatGPT e.g. local models).
+    """
+
+    @abstractmethod
+    def __call__(self, value: object) -> object:
+        """TODO."""
+
+
+    @property
+    @abstractmethod
+    def total_tokens(self) -> str:
+        """
+        Returns the total number of tokens used by the model during this object's lifetime.
+
+        Returns `None` if the model does not know how to count tokens.
+        """
+
+    @property
+    @abstractmethod
+    def total_cost(self) -> str:
+        """
+        Returns the total cost associated with usage of the model during this object's lifetime.
+
+        Returns `None` if the model does not know how to count costs.
+        """
+
+
+class EmbeddingsModel(LargeLanguageModel):
+    """TODO."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.history = []
+
+    @abstractmethod
+    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsMetaData]:
+        """TODO."""
+
+    def __call__(self, docs: list[Document]) -> list[Document]:
+        """TODO."""
+        docs, metadata = self._run(docs=docs)
+        self.history.append(metadata)
+        return docs
+
+    @property
+    def total_tokens(self) -> str:
+        """
+        Returns the total number of tokens used by the model during this object's lifetime.
+
+        Returns `None` if the model does not know how to count tokens.
+        """
+        if self.history:
+            return sum(x.total_tokens for x in self.history)
+        return None
+
+    @property
+    def total_cost(self) -> str:
+        """
+        Returns the total cost associated with usage of the model during this object's lifetime.
+
+        Returns `None` if the model does not know how to count costs.
+        """
+        if self.history and self.history[0].cost is not None:
+            return sum(x.cost for x in self.history)
+        return None
+
+
+class ChatModel(LargeLanguageModel):
     """
     A Model (e.g. ChatGPT-3) is a class that is callable and invoked with a string and returns a
     string. It has helper methods that track the history/usage of the how an instantiated model
@@ -29,26 +116,8 @@ class LLM(ABC):
     have direct costs like ChatGPT).
     """
 
-    def __init__(
-            self,
-            model_type: str,
-            ) -> None:
-        """
-        Init method.
-
-        Args:
-            model_type: either 'instruct', 'chat', or 'embedding'
-            token_counter:
-                if provided, the `prompt_tokens`, `response_tokens`, and `total_tokens` fields will
-                be calculated from the prompt/response
-            cost_per_token: cost_per_token
-                if provided, the `cost` field will be calculated from the `total_tokens` field.
-        """
+    def __init__(self):
         super().__init__()
-        assert model_type in {'instruct', 'chat', 'embedding'}
-        self.model_type = model_type
-        # self.token_counter = token_counter
-        # self.cost_per_token = cost_per_token
         self.history: list[MessageMetaData] = []
 
     @abstractmethod
@@ -141,9 +210,9 @@ class LLM(ABC):
 
 
 class MemoryBuffer(ABC):
-    """TBD."""
+    """TODO."""
 
     @abstractmethod
     def __call__(self, history: list[MessageMetaData]) -> list[MessageMetaData]:
-        """TBD."""
+        """TODO."""
 
