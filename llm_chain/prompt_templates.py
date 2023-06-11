@@ -15,7 +15,6 @@ class DocSearchTemplate(PromptTemplate):
     DocSearchTemplate is a prompt-template that, based on the prompt provided when the object is
     called (__call__), looks up the most similar documents via the `doc_index` provided and
     includes all of the documents (i.e. the underlying content) in the prompt.
-
     """
 
     def __init__(
