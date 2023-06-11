@@ -122,7 +122,6 @@ def test_Chain_with_MockChat_tokens_costs():  # noqa
     assert chain.total_tokens == chat.total_tokens
     assert chain.total_cost == chat.total_cost
 
-
 def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     """
     This is an unrealistic but useful test where we are using an embeddings model and a chat

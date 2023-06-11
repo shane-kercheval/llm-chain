@@ -26,15 +26,15 @@ class Chain:
         Returns the total number of tokens used by the all models during the chain/object's
         lifetime.
 
-        #TODO: VERIFY/UPDATREReturns `None` none of the models does not know how to count tokens.
+        Returns `None` if none of the models knows how to count tokens.
         """
         links = [
             link for link in self.chain
             if _has_property(link, property_name='total_tokens') and link.total_tokens
         ]
-        # edge case: the same model is used multiple times in the same chain (e.g. embedding model)
-        # we can't loop through the chains because we'd be double-counting the totals from objects
-        # that are included multiple times
+        # Edge-case: if the same model is used multiple times in the same chain (e.g. embedding
+        # model) we can't loop through the chains because we'd be double-counting the totals from
+        # objects that are already included multiple times
         # we have to build up a list of objects and include the objects if they aren't already
         unique_links = []
         for link in links:
@@ -52,15 +52,15 @@ class Chain:
         Returns the total cost associated with usage across all models during the chain/object's
         lifetime.
 
-        #TODO: VERIFY/UPDATREReturns Returns `None` if the model does not know how to count costs.
+        Returns `None` if none of the models know how to count costs.
         """
         links = [
             link for link in self.chain
             if _has_property(link, property_name='total_cost') and link.total_cost
         ]
-        # edge case: the same model is used multiple times in the same chain (e.g. embedding model)
-        # we can't loop through the chains because we'd be double-counting the totals from objects
-        # that are included multiple times
+        # Edge-case: if the same model is used multiple times in the same chain (e.g. embedding
+        # model) we can't loop through the chains because we'd be double-counting the totals from
+        # objects that are already included multiple times
         # we have to build up a list of objects and include the objects if they aren't already
         unique_links = []
         for link in links:
