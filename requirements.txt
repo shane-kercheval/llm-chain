@@ -1,3 +1,4 @@
+chromadb
 coverage
 duckduckgo-search
 faker

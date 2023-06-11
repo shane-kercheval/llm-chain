@@ -2,7 +2,7 @@
 from llm_chain.base import MemoryBuffer, MessageMetaData
 
 
-class MemoryBufferWindow(MemoryBuffer):
+class MemoryBufferMessageWindow(MemoryBuffer):
     """TODO."""
 
     def __init__(self, last_n_messages: int) -> None:
@@ -36,4 +36,3 @@ class MemoryBufferTokenWindow(MemoryBuffer):
             memory.append(message)
             tokens_used += message.total_tokens
         return reversed(memory)
-

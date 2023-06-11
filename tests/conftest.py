@@ -16,14 +16,30 @@ class MockChat(ChatModel):
     def __init__(
             self,
             token_counter: Callable[[str], int] | None = None,
-            cost_per_token: float | None = None) -> None:
+            cost_per_token: float | None = None,
+            return_prompt: str | None = None ) -> None:
+        """
+        Used to test base classes.
+
+        Args:
+            token_counter:
+                custom token counter to check total_tokens
+            cost_per_token:
+                custom costs to check total_costs
+            return_prompt:
+                if not None, prepends the string to the prompt and returns it as a response
+        """
         super().__init__()
         self.token_counter = token_counter
         self.cost_per_token = cost_per_token
+        self.return_prompt = return_prompt
 
     def _run(self, prompt: str) -> MessageMetaData:
-        fake = Faker()
-        response = ' '.join([fake.word() for _ in range(random.randint(10, 100))])
+        if self.return_prompt:
+            response = self.return_prompt + prompt
+        else:
+            fake = Faker()
+            response = ' '.join([fake.word() for _ in range(random.randint(10, 100))])
         prompt_tokens = self.token_counter(prompt) if self.token_counter else None
         response_tokens = self.token_counter(response) if self.token_counter else None
         total_tokens = prompt_tokens + response_tokens if self.token_counter else None
