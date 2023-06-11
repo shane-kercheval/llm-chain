@@ -1,7 +1,8 @@
 """test llm_chain/vector_db/chroma.db."""
 import chromadb
-from llm_chain.indexes import ChromaIndex
-from tests.conftest import MockABCDEmbeddings
+from llm_chain.base import Document
+from llm_chain.indexes import ChromaDocumentIndex
+from tests.conftest import MockABCDEmbeddings, MockRandomEmbeddings
 
 
 def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
@@ -9,7 +10,7 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     embeddings_model = MockABCDEmbeddings()
     client = chromadb.Client()
     collection = client.create_collection("test")
-    chroma_db = ChromaIndex(collection=collection, embeddings_model=embeddings_model)
+    chroma_db = ChromaDocumentIndex(collection=collection, embeddings_model=embeddings_model)
     assert chroma_db.total_tokens is None
     assert chroma_db.total_cost is None
     chroma_db.add_documents(docs=fake_docs_abcd)
@@ -83,3 +84,24 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     assert embeddings_model.history[1].cost == len("Doc X") * embeddings_model.cost_per_token
     assert embeddings_model.history[1].total_tokens == len("Doc X")
     assert embeddings_model.history[1].cost == len("Doc X") * embeddings_model.cost_per_token
+
+def test_chroma_add_document_without_metadata():  # noqa
+    client = chromadb.Client()
+    collection = client.create_collection("test")
+    cost_per_token = 13
+    embeddings_model = MockRandomEmbeddings(token_counter=len, cost_per_token=cost_per_token)
+    doc_index = ChromaDocumentIndex(collection=collection, embeddings_model=embeddings_model)
+    docs = [
+        Document(content='This is a document'),
+        Document(content='This is a another document'),
+        Document(content='This is a another another document'),
+    ]
+    doc_index.add_documents(docs=docs)
+    collection_docs = collection.get(include = ['documents', 'metadatas', 'embeddings'])
+    assert collection_docs['documents'] == [x.content for x in docs]
+    assert collection_docs['metadatas'] == [{}, {}, {}]
+    assert collection_docs['ids'] == ['0', '1', '2']
+    assert len(collection_docs['embeddings']) == len(docs)
+
+    results = doc_index.search_documents(doc=docs[0], n_results=1)
+    assert 'distance' in results[0].metadata

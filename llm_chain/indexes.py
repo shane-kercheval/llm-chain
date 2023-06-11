@@ -2,7 +2,7 @@
 from chromadb.api.models.Collection import Collection
 from llm_chain.base import Document, DocumentIndex, EmbeddingsModel
 
-class ChromaIndex(DocumentIndex):
+class ChromaDocumentIndex(DocumentIndex):
     """TODO."""
 
     def __init__(self, collection: Collection, embeddings_model: EmbeddingsModel) -> None:
@@ -12,7 +12,7 @@ class ChromaIndex(DocumentIndex):
     def add_documents(self, docs: list[Document]) -> None:
         """TODO."""
         embeddings = self._embeddings_model(docs=docs)
-        metadatas = [x.metadata for x in docs]
+        metadatas = [x.metadata or {} for x in docs]
         documents = [x.content for x in docs]
         self._collection.add(
             embeddings=embeddings,

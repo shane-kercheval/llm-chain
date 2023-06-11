@@ -37,11 +37,15 @@ class DocSearchTemplate(PromptTemplate):
         self.doc_index = doc_index
         self.n_docs = n_docs
         self.template = template if template else PROMPT_TEMLATE__DOC_SEARCH_STUFF
+        self.similar_docs = None
 
     def __call__(self, prompt: str) -> str:  # noqa
         super().__call__(prompt)
-        similar_docs = self.doc_index.search_documents(doc=Document(content=prompt))
-        doc_string = r'\n\n'.join([x.content for x in similar_docs])
+        self.similar_docs = self.doc_index.search_documents(
+            doc=Document(content=prompt),
+            n_results=self.n_docs,
+        )
+        doc_string = '\n\n'.join([x.content for x in self.similar_docs])
         return self.template.\
             replace('{{documents}}', doc_string).\
             replace('{{prompt}}', prompt)
