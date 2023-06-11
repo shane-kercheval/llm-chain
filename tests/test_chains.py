@@ -1,11 +1,4 @@
 """TODO."""
-# import numpy as np
-# from llm_chain.base import Document, EmbeddingsMetaData, MessageMetaData
-# from llm_chain.memory import MemoryBufferWindow
-# from llm_chain.models import OpenAIChat, OpenAIEmbeddings
-# from llm_chain.tools import split_documents
-# from tests.conftest import MockChat, MockEmbeddings
-
 from llm_chain.base import Document
 from llm_chain.chains import Chain, _has_property
 from tests.conftest import MockChat, MockEmbeddings
@@ -122,6 +115,63 @@ def test_Chain_with_MockChat_tokens_costs():  # noqa
     assert chain.total_tokens == chat.total_tokens
     assert chain.total_cost == chat.total_cost
 
+    new_prompt = "New Prompt"
+    result = chain(new_prompt)
+    new_first_response = "Response: " + new_prompt
+    new_second_prompt = "Question: " + new_first_response
+    new_second_response = "Response: " + new_second_prompt
+    # the final result should be the response returned by the second invokation of chat()
+    assert result == new_second_response
+
+    assert len(chat.history) == 4
+    assert chat.history[0].prompt == prompt
+    assert chat.history[0].response == first_response
+    assert chat.history[0].prompt_tokens == len(prompt)
+    assert chat.history[0].response_tokens == len(first_response)
+    assert chat.history[0].total_tokens == len(prompt) + len(first_response)
+    assert chat.history[0].cost == chat.history[0].total_tokens * cost_per_token
+    assert chat.history[1].prompt == second_prompt
+    assert chat.history[1].response == second_response
+    assert chat.history[1].prompt_tokens == len(second_prompt)
+    assert chat.history[1].response_tokens == len(second_response)
+    assert chat.history[1].total_tokens == len(second_prompt) + len(second_response)
+    assert chat.history[1].cost == chat.history[1].total_tokens * cost_per_token
+    assert chat.history[2].prompt == new_prompt
+    assert chat.history[2].response == new_first_response
+    assert chat.history[2].prompt_tokens == len(new_prompt)
+    assert chat.history[2].response_tokens == len(new_first_response)
+    assert chat.history[2].total_tokens == len(new_prompt) + len(new_first_response)
+    assert chat.history[2].cost == chat.history[2].total_tokens * cost_per_token
+    assert chat.history[3].prompt == new_second_prompt
+    assert chat.history[3].response == new_second_response
+    assert chat.history[3].prompt_tokens == len(new_second_prompt)
+    assert chat.history[3].response_tokens == len(new_second_response)
+    assert chat.history[3].total_tokens == len(new_second_prompt) + len(new_second_response)
+    assert chat.history[3].cost == chat.history[3].total_tokens * cost_per_token
+
+    assert chat.total_prompt_tokens == chat.history[0].prompt_tokens + \
+        chat.history[1].prompt_tokens + \
+        chat.history[2].prompt_tokens + \
+        chat.history[3].prompt_tokens
+    assert chat.total_response_tokens == chat.history[0].response_tokens + \
+        chat.history[1].response_tokens + \
+        chat.history[2].response_tokens + \
+        chat.history[3].response_tokens
+    assert chat.total_tokens == chat.history[0].total_tokens + \
+        chat.history[1].total_tokens + \
+        chat.history[2].total_tokens + \
+        chat.history[3].total_tokens
+    assert chat.total_cost == chat.history[0].cost + \
+        chat.history[1].cost + \
+        chat.history[2].cost + \
+        chat.history[3].cost
+
+    # because the `chat` model is included twice in the chain; this check ensures we are not
+    # double-counting the totals
+    assert chain.total_tokens == chat.total_tokens
+    assert chain.total_cost == chat.total_cost
+
+
 def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     """
     This is an unrealistic but useful test where we are using an embeddings model and a chat
@@ -216,5 +266,13 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     # double-counting the totals
     assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
     assert chain.total_cost == chat.total_cost + embeddings.total_cost
+
+
+
+# TODO: test running the chain multiple times
+
+
+
+
 
 # # TODO: implement rety (refactor call to openai.ChatCompletion.create)
