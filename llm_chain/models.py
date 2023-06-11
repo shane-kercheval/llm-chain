@@ -2,6 +2,7 @@
 from collections.abc import Callable
 from llm_chain.base import ChatModel, Document, EmbeddingsMetaData, EmbeddingsModel, \
     MemoryBuffer, MessageMetaData
+from llm_chain.resources import MODEL_COST_PER_1K_TOKENS
 
 
 class OpenAIEmbeddings(EmbeddingsModel):
@@ -34,24 +35,18 @@ class OpenAIEmbeddings(EmbeddingsModel):
         self.model_name = model_name
         self.doc_prep = doc_prep
 
-    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsMetaData]:
-        """
-        TODO.
-
-        Populates the `embedding` property on the Document.
-        """
+    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsMetaData]:
+        """TODO."""
         import openai
         texts = [self.doc_prep(x.content) for x in docs]
         response = openai.Embedding.create(input = texts, model=self.model_name)
         total_tokens = response['usage']['total_tokens']
         embeddings = [x['embedding'] for x in response['data']]
-        for doc, embedding in zip(docs, embeddings):
-            doc.embedding = embedding
         metadata = EmbeddingsMetaData(
             total_tokens=total_tokens,
             cost=self.cost_per_token * total_tokens,
         )
-        return docs, metadata
+        return embeddings, metadata
 
 
 class OpenAIChat(ChatModel):
@@ -72,35 +67,10 @@ class OpenAIChat(ChatModel):
         # TODO: doc string model_name e.g. 'gpt-3.5-turbo'
         # copied from https://github.com/hwchase17/langchain/blob/master/langchain/callbacks/openai_info.py
         super().__init__()
-        model_cost_per_1k_tokens = {
-            'gpt-4': 0.03,
-            'gpt-4-0314': 0.03,
-            'gpt-4-completion': 0.06,
-            'gpt-4-0314-completion': 0.06,
-            'gpt-4-32k': 0.06,
-            'gpt-4-32k-0314': 0.06,
-            'gpt-4-32k-completion': 0.12,
-            'gpt-4-32k-0314-completion': 0.12,
-            'gpt-3.5-turbo': 0.002,
-            'gpt-3.5-turbo-0301': 0.002,
-            'text-ada-001': 0.0004,
-            'ada': 0.0004,
-            'text-babbage-001': 0.0005,
-            'babbage': 0.0005,
-            'text-curie-001': 0.002,
-            'curie': 0.002,
-            'text-davinci-003': 0.02,
-            'text-davinci-002': 0.02,
-            'code-davinci-002': 0.02,
-            'ada-finetuned': 0.0016,
-            'babbage-finetuned': 0.0024,
-            'curie-finetuned': 0.012,
-            'davinci-finetuned': 0.12,
-        }
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self.cost_per_token = model_cost_per_1k_tokens[model_name] / 1000
+        self.cost_per_token = MODEL_COST_PER_1K_TOKENS[model_name] / 1000
         self.memory_strategy = memory_strategy
         self.system_message = {'role': 'system', 'content': system_message}
         self._previous_memory = None

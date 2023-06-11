@@ -31,7 +31,6 @@ class Document(BaseModel):
 
     content: str
     metadata: dict | None
-    embedding: list | None  # pydantic doesn't seem to support np.ndarray...
 
 
 class LargeLanguageModel(ABC):
@@ -76,14 +75,14 @@ class EmbeddingsModel(LargeLanguageModel):
         self.history = []
 
     @abstractmethod
-    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsMetaData]:
+    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsMetaData]:
         """TODO."""
 
-    def __call__(self, docs: list[Document]) -> list[Document]:
+    def __call__(self, docs: list[Document]) -> list[list[float]]:
         """TODO."""
-        docs, metadata = self._run(docs=docs)
+        embeddings, metadata = self._run(docs=docs)
         self.history.append(metadata)
-        return docs
+        return embeddings
 
     @property
     def total_tokens(self) -> str:
@@ -215,3 +214,53 @@ class MemoryBuffer(ABC):
     @abstractmethod
     def __call__(self, history: list[MessageMetaData]) -> list[MessageMetaData]:
         """TODO."""
+
+
+class PromptTemplate(ABC):
+    """
+    A prompt_template is a callable object that takes a prompt (e.g. user query) as input and
+    returns a modified prompt. Each prompt_template is given the information it needs when it is
+    instantiated. So for example, if a template's job is to search for relevant documents, it's
+    provided the vector database when the object is created (not via __call__).
+    """
+
+    @abstractmethod
+    def __call__(self, prompt: str) -> str:
+        """TODO."""
+
+
+class DocumentIndex(ABC):
+    """
+    A DocumentIndex is simply a way of adding and searching for `Document` objects. For example, it
+    could be a wrapper around chromadb.
+
+    A DocumentIndex should propagate any total_tokens or total_cost used by the underlying models
+    (e.g. if it uses an EmbeddingModel), or return None if not applicable.
+    """
+
+    @abstractmethod
+    def add_documents(self, docs: list[Document]) -> None:
+        """Add documents to the underlying index/database."""
+
+    @abstractmethod
+    def search_documents(self, doc: Document, n_results: int = 3) -> list[Document]:
+        """Search for documents in the underlying index/database."""
+
+    @property
+    @abstractmethod
+    def total_tokens(self) -> str:
+        """
+        Returns the total number of tokens used by the model during this object's lifetime.
+
+        Returns `None` if the model does not know how to count tokens.
+        """
+
+    @property
+    @abstractmethod
+    def total_cost(self) -> str:
+        """
+        Returns the total cost associated with usage of the model during this object's lifetime.
+
+        Returns `None` if the model does not know how to count costs.
+        """
+

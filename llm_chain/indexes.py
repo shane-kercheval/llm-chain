@@ -1,19 +1,20 @@
 """TODO."""
 from chromadb.api.models.Collection import Collection
-from llm_chain.base import Document
+from llm_chain.base import Document, DocumentIndex, EmbeddingsModel
 
-class ChromaCollection:
+class ChromaIndex(DocumentIndex):
     """TODO."""
 
-    def __init__(self, collection: Collection) -> None:
-        self.collection = collection
+    def __init__(self, collection: Collection, embeddings_model: EmbeddingsModel) -> None:
+        self._collection = collection
+        self._embeddings_model = embeddings_model
 
     def add_documents(self, docs: list[Document]) -> None:
         """TODO."""
-        embeddings = [x.embedding for x in docs]
+        embeddings = self._embeddings_model(docs=docs)
         metadatas = [x.metadata for x in docs]
         documents = [x.content for x in docs]
-        self.collection.add(
+        self._collection.add(
             embeddings=embeddings,
             metadatas=metadatas,
             documents=documents,
@@ -22,8 +23,9 @@ class ChromaCollection:
 
     def search_documents(self, doc: Document, n_results: int = 3) -> list[Document]:
         """TODO."""
-        results = self.collection.query(
-            query_embeddings=[doc.embedding],
+        embeddings = self._embeddings_model(docs=[doc])
+        results = self._collection.query(
+            query_embeddings=embeddings,
             n_results=n_results,
         )
         # index 0 because we are only searching against a single document
@@ -38,3 +40,13 @@ class ChromaCollection:
                 metadata=meta,
             ))
         return similar_docs
+
+    @property
+    def total_tokens(self) -> str:
+        """Propagates the total_tokens used by the underlying EmbeddingsModel."""
+        return self._embeddings_model.total_tokens
+
+    @property
+    def total_cost(self) -> str:
+        """Propagates the total_cost used by the underlying EmbeddingsModel."""
+        return self._embeddings_model.total_cost

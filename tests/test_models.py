@@ -1,8 +1,7 @@
 """tests llm_chain/models.py."""
-import numpy as np
 from llm_chain.base import Document, EmbeddingsMetaData, MessageMetaData
 from llm_chain.models import OpenAIChat, OpenAIEmbeddings
-from tests.conftest import MockChat, MockEmbeddings
+from tests.conftest import MockChat, MockRandomEmbeddings
 
 
 def test_ChatModel__no_token_counter_or_costs():  # noqa
@@ -239,7 +238,7 @@ def test_OpenAIChat():  # noqa
     assert openai_llm.total_response_tokens == previous_response_tokens + message.response_tokens
 
 def test_EmbeddingsModel__no_costs():  # noqa
-    model = MockEmbeddings(token_counter=len, cost_per_token=None)
+    model = MockRandomEmbeddings(token_counter=len, cost_per_token=None)
     assert model.total_cost is None
     assert model.total_tokens is None
 
@@ -252,16 +251,14 @@ def test_EmbeddingsModel__no_costs():  # noqa
         Document(content=doc_content_0),
         Document(content=doc_content_1),
     ]
-    new_docs = model(docs)
+    embeddings = model(docs)
     expected_tokens = sum(len(x.content) for x in docs)
-    assert isinstance(new_docs, list)
-    assert isinstance(new_docs[0], Document)
-    assert len(new_docs) == len(docs)
+    assert isinstance(embeddings, list)
+    assert isinstance(embeddings[0][0], float)
+    assert all(isinstance(x, list) for x in embeddings)
+    assert len(embeddings) == len(docs)
     assert docs[0].content == doc_content_0
     assert docs[1].content == doc_content_1
-    assert new_docs[0].content == doc_content_0
-    assert new_docs[1].content == doc_content_1
-    assert all(isinstance(x.embedding, np.ndarray) for x in new_docs)
 
     assert len(model.history) == 1
     last_metadata = model.history[0]
@@ -283,16 +280,14 @@ def test_EmbeddingsModel__no_costs():  # noqa
         Document(content=doc_content_2),
         Document(content=doc_content_3),
     ]
-    new_docs = model(docs)
+    embeddings = model(docs)
     expected_tokens = sum(len(x.content) for x in docs)
-    assert isinstance(new_docs, list)
-    assert isinstance(new_docs[0], Document)
-    assert len(new_docs) == len(docs)
+    assert isinstance(embeddings, list)
+    assert isinstance(embeddings[0][0], float)
+    assert all(isinstance(x, list) for x in embeddings)
+    assert len(embeddings) == len(docs)
     assert docs[0].content == doc_content_2
     assert docs[1].content == doc_content_3
-    assert new_docs[0].content == doc_content_2
-    assert new_docs[1].content == doc_content_3
-    assert all(isinstance(x.embedding, np.ndarray) for x in new_docs)
 
     assert len(model.history) == 2
     first_meata = model.history[0]
@@ -310,7 +305,7 @@ def test_EmbeddingsModel__no_costs():  # noqa
 
 def test_EmbeddingsModel__with_costs():  # noqa
     cost_per_token = 3
-    model = MockEmbeddings(token_counter=len, cost_per_token=cost_per_token)
+    model = MockRandomEmbeddings(token_counter=len, cost_per_token=cost_per_token)
     assert model.total_cost is None
     assert model.total_tokens is None
 
@@ -323,17 +318,16 @@ def test_EmbeddingsModel__with_costs():  # noqa
         Document(content=doc_content_0),
         Document(content=doc_content_1),
     ]
-    new_docs = model(docs)
+    embeddings = model(docs)
     expected_tokens = sum(len(x.content) for x in docs)
     expected_cost = expected_tokens * cost_per_token
-    assert isinstance(new_docs, list)
-    assert isinstance(new_docs[0], Document)
-    assert len(new_docs) == len(docs)
+    assert isinstance(embeddings, list)
+    assert isinstance(embeddings[0][0], float)
+    assert all(isinstance(x, list) for x in embeddings)
+
+    assert len(embeddings) == len(docs)
     assert docs[0].content == doc_content_0
     assert docs[1].content == doc_content_1
-    assert new_docs[0].content == doc_content_0
-    assert new_docs[1].content == doc_content_1
-    assert all(isinstance(x.embedding, np.ndarray) for x in new_docs)
 
     assert len(model.history) == 1
     last_metadata = model.history[0]
@@ -356,17 +350,16 @@ def test_EmbeddingsModel__with_costs():  # noqa
         Document(content=doc_content_2),
         Document(content=doc_content_3),
     ]
-    new_docs = model(docs)
+    embeddings = model(docs)
     expected_tokens = sum(len(x.content) for x in docs)
     expected_cost = expected_tokens * cost_per_token
-    assert isinstance(new_docs, list)
-    assert isinstance(new_docs[0], Document)
-    assert len(new_docs) == len(docs)
+    assert isinstance(embeddings, list)
+    assert isinstance(embeddings[0][0], float)
+    assert all(isinstance(x, list) for x in embeddings)
+
+    assert len(embeddings) == len(docs)
     assert docs[0].content == doc_content_2
     assert docs[1].content == doc_content_3
-    assert new_docs[0].content == doc_content_2
-    assert new_docs[1].content == doc_content_3
-    assert all(isinstance(x.embedding, np.ndarray) for x in new_docs)
 
     assert len(model.history) == 2
     first_meata = model.history[0]
@@ -396,17 +389,15 @@ def test_OpenAIEmbeddings():  # noqa
         Document(content=doc_content_0),
         Document(content=doc_content_1),
     ]
-    new_docs = model(docs)
+    embeddings = model(docs)
     expected_cost = model.history[0].total_tokens * model.cost_per_token
-    assert isinstance(new_docs, list)
-    assert isinstance(new_docs[0], Document)
-    assert len(new_docs) == len(docs)
+    assert isinstance(embeddings, list)
+    assert isinstance(embeddings[0][0], float)
+    assert len(embeddings) == len(docs)
     assert docs[0].content == doc_content_0
     assert docs[1].content == doc_content_1
-    assert new_docs[0].content == doc_content_0
-    assert new_docs[1].content == doc_content_1
-    assert all(isinstance(x.embedding, list) for x in new_docs)
-    assert all(len(x.embedding) > 100 for x in new_docs)
+    assert all(isinstance(x, list) for x in embeddings)
+    assert all(len(x) > 100 for x in embeddings)
 
     assert len(model.history) == 1
     last_metadata = model.history[0]
@@ -429,16 +420,14 @@ def test_OpenAIEmbeddings():  # noqa
         Document(content=doc_content_2),
         Document(content=doc_content_3),
     ]
-    new_docs = model(docs)
+    embeddings = model(docs)
     expected_cost = model.history[1].total_tokens * model.cost_per_token
-    assert isinstance(new_docs, list)
-    assert isinstance(new_docs[0], Document)
-    assert len(new_docs) == len(docs)
+    assert isinstance(embeddings, list)
+    assert isinstance(embeddings[0][0], float)
+    assert len(embeddings) == len(docs)
     assert docs[0].content == doc_content_2
     assert docs[1].content == doc_content_3
-    assert new_docs[0].content == doc_content_2
-    assert new_docs[1].content == doc_content_3
-    assert all(isinstance(x.embedding, list) for x in new_docs)
+    assert all(isinstance(x, list) for x in embeddings)
 
     assert len(model.history) == 2
     first_meata = model.history[0]

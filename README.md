@@ -11,8 +11,7 @@ Simple and extensible LLM Chaining (pre-alpha)
 
 ## TODO
 
-- implement vectordb store
-- implement DocumentPrompt (stuff docs + query)
+- implement DocumentPrompt (stuff docs + query): input: prompt; output prompt ;;
 - test MemoryBufferTokenWindow
 - implement streaming
     - issue with tracking tokens/cost

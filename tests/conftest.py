@@ -10,6 +10,11 @@ from llm_chain.base import ChatModel, Document, EmbeddingsMetaData, EmbeddingsMo
     MessageMetaData
 
 
+@pytest.fixture(scope="session", autouse=True)
+def load_env_vars():  # noqa
+    load_dotenv()
+
+
 class MockChat(ChatModel):
     """Used for unit tests to mock the behavior of an LLM."""
 
@@ -55,29 +60,59 @@ class MockChat(ChatModel):
         )
 
 
-class MockEmbeddings(EmbeddingsModel):
+class MockRandomEmbeddings(EmbeddingsModel):
     """Used for unit tests to mock the behavior of an LLM."""
 
     def __init__(
             self,
-            token_counter: Callable[[str], int] | None = None,
+            token_counter: Callable[[str], int],
             cost_per_token: float | None = None) -> None:
         super().__init__()
         self.token_counter = token_counter
         self.cost_per_token = cost_per_token
 
     def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsMetaData]:
-        response = [np.random.rand(5) for _ in docs]
-        for doc, embedding in zip(docs, response):
-            doc.embedding = embedding
+        embeddings = [np.random.rand(5).tolist() for _ in docs]
         total_tokens = sum(self.token_counter(x.content) for x in docs) \
             if self.token_counter else None
         cost = total_tokens * self.cost_per_token if self.cost_per_token else None
-        return docs, EmbeddingsMetaData(
+        return embeddings, EmbeddingsMetaData(
             total_tokens=total_tokens,
             cost=cost,
         )
 
-@pytest.fixture(scope="session", autouse=True)
-def load_env_vars():  # noqa
-    load_dotenv()
+@pytest.fixture()
+def fake_docs_abcd() -> list[Document]:
+    """Meant to be used MockABCDEmbeddings model."""
+    return [
+        Document(content="Doc A", metadata={'id': 0}),
+        Document(content="Doc B", metadata={'id': 1}),
+        Document(content="Doc C", metadata={'id': 3}),
+        Document(content="Doc D", metadata={'id': 4}),
+    ]
+
+class MockABCDEmbeddings(EmbeddingsModel):
+    """
+    Used for unit tests to mock the behavior of an LLM.
+
+    Used in conjunction with a specific document list `fake_docs_abcd`.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.cost_per_token = 7
+        self.lookup = {
+            0: [0.5, 0.5, 0.5, 0.5, 0.5],
+            1: [1, 1, 1, 1, 1],
+            3: [3, 3, 3, 3, 3],
+            4: [4, 4, 4, 4, 4],
+        }
+
+    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsMetaData]:
+        embeddings = [self.lookup[x.metadata['id']] for x in docs]
+        total_tokens = sum(len(x.content) for x in docs)
+        cost = total_tokens * self.cost_per_token
+        return embeddings, EmbeddingsMetaData(
+            total_tokens=total_tokens,
+            cost=cost,
+        )

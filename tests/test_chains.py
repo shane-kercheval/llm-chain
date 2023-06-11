@@ -1,7 +1,7 @@
 """TODO."""
 from llm_chain.base import Document
 from llm_chain.chains import Chain, _has_property
-from tests.conftest import MockChat, MockEmbeddings
+from tests.conftest import MockChat, MockRandomEmbeddings
 
 
 def test_chain():  # noqa
@@ -185,6 +185,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
         Document(content="Doc A"),
         Document(content="Doc B"),
     ]
+    cache_list_docs = {'cache': docs}
 
     def list_docs_to_prompt(docs: list[Document]) -> str:
         """
@@ -198,9 +199,22 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
         This isn't an example of how a chain would actually be used, but simply a way to mimic
         fowarding information from one step to another.
         """  # noqa: D404
-        return [Document(content=x) for x in prompt.split(' ')]
+        docs = [Document(content=x) for x in prompt.split(' ')]
+        cache_list_docs['cache'] = docs
+        return docs
 
-    embeddings = MockEmbeddings(token_counter=len, cost_per_token=cost_per_token_embedding)
+    def embeddings_to_docs(embeddings: list[list[float]]) -> list[Document]:
+        """
+        This isn't an example of how a chain would actually be used, but simply a way to mimic
+        fowarding information from one step to another.
+        """  # noqa: D404
+        temp_docs = cache_list_docs['cache']
+        for doc, embedding in zip(temp_docs, embeddings, strict=True):
+            doc.metadata = {'embedding': embedding}
+        return temp_docs
+
+    embeddings = MockRandomEmbeddings(token_counter=len, cost_per_token=cost_per_token_embedding)
+
     chat = MockChat(
         return_prompt="Response: ",
         token_counter=len,
@@ -208,10 +222,12 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     )
     chain = Chain(chain=[
         embeddings,
+        embeddings_to_docs,
         list_docs_to_prompt,
         chat,
         prompt_to_list_docs,
         embeddings,
+        embeddings_to_docs,
         list_docs_to_prompt,
         chat])
     result = chain(docs)
@@ -273,6 +289,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
         Document(content="Doc CC"),
         Document(content="Doc DD"),
     ]
+    cache_list_docs = {'cache': new_docs}
     new_result = chain(new_docs)
     ####
     # Test chat model
