@@ -171,7 +171,6 @@ def test_Chain_with_MockChat_tokens_costs():  # noqa
     assert chain.total_tokens == chat.total_tokens
     assert chain.total_cost == chat.total_cost
 
-
 def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     """
     This is an unrealistic but useful test where we are using an embeddings model and a chat
@@ -267,12 +266,99 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
     assert chain.total_cost == chat.total_cost + embeddings.total_cost
 
+    ####
+    # Test using the same chain again
+    ####
+    new_docs = [
+        Document(content="Doc CC"),
+        Document(content="Doc DD"),
+    ]
+    new_result = chain(new_docs)
+    ####
+    # Test chat model
+    ####
+    new_initial_prompt = "Doc CC Doc DD"
+    new_first_response = "Response: " + new_initial_prompt
+    new_second_prompt = new_first_response
+    new_second_response = "Response: " + new_second_prompt
 
+    # the final result should be the response returned by the second invokation of chat()
+    assert new_result == new_second_response
+    # check that the prompts/responses got propegated through the chain
+    assert len(chat.history) == 4
+    # these should not have changed from last time
+    assert chat.history[0].prompt == initial_prompt
+    assert chat.history[0].response == first_response
+    assert chat.history[0].prompt_tokens == len(initial_prompt)
+    assert chat.history[0].response_tokens == len(first_response)
+    assert chat.history[0].total_tokens == len(initial_prompt) + len(first_response)
+    assert chat.history[0].cost == chat.history[0].total_tokens * cost_per_token_chat
+    assert chat.history[1].prompt == second_prompt
+    assert chat.history[1].response == second_response
+    assert chat.history[1].prompt_tokens == len(second_prompt)
+    assert chat.history[1].response_tokens == len(second_response)
+    assert chat.history[1].total_tokens == len(second_prompt) + len(second_response)
+    assert chat.history[1].cost == chat.history[1].total_tokens * cost_per_token_chat
+    # test the new history
+    assert chat.history[2].prompt == new_initial_prompt
+    assert chat.history[2].response == new_first_response
+    assert chat.history[2].prompt_tokens == len(new_initial_prompt)
+    assert chat.history[2].response_tokens == len(new_first_response)
+    assert chat.history[2].total_tokens == len(new_initial_prompt) + len(new_first_response)
+    assert chat.history[2].cost == chat.history[2].total_tokens * cost_per_token_chat
+    assert chat.history[3].prompt == new_second_prompt
+    assert chat.history[3].response == new_second_response
+    assert chat.history[3].prompt_tokens == len(new_second_prompt)
+    assert chat.history[3].response_tokens == len(new_second_response)
+    assert chat.history[3].total_tokens == len(new_second_prompt) + len(new_second_response)
+    assert chat.history[3].cost == chat.history[3].total_tokens * cost_per_token_chat
 
-# TODO: test running the chain multiple times
+    # test chat totals
+    assert chat.total_prompt_tokens == chat.history[0].prompt_tokens + \
+        chat.history[1].prompt_tokens + \
+        chat.history[2].prompt_tokens + \
+        chat.history[3].prompt_tokens
+    assert chat.total_response_tokens == chat.history[0].response_tokens + \
+        chat.history[1].response_tokens + \
+        chat.history[2].response_tokens + \
+        chat.history[3].response_tokens
+    assert chat.total_tokens == chat.history[0].total_tokens + \
+        chat.history[1].total_tokens + \
+        chat.history[2].total_tokens + \
+        chat.history[3].total_tokens
+    assert chat.total_cost == chat.history[0].cost + \
+        chat.history[1].cost + \
+        chat.history[2].cost + \
+        chat.history[3].cost
 
+    ####
+    # Test embeddings model
+    ####
+    assert len(embeddings.history) == 4
+    # original history should not have changed
+    assert embeddings.history[0].total_tokens == len(docs[0].content) + len(docs[1].content)
+    assert embeddings.history[0].cost == embeddings.history[0].total_tokens * cost_per_token_embedding  # noqa
+    assert embeddings.history[1].total_tokens == len("Response:DocADocB")
+    assert embeddings.history[1].cost == embeddings.history[1].total_tokens * cost_per_token_embedding  # noqa
+    # test new history
+    assert embeddings.history[2].total_tokens == len(new_docs[0].content) + len(new_docs[1].content)  # noqa
+    assert embeddings.history[2].cost == embeddings.history[2].total_tokens * cost_per_token_embedding  # noqa
+    assert embeddings.history[3].total_tokens == len("Response:DocCCDocDD")
+    assert embeddings.history[3].cost == embeddings.history[3].total_tokens * cost_per_token_embedding  # noqa
 
+    assert embeddings.total_tokens == embeddings.history[0].total_tokens + \
+        embeddings.history[1].total_tokens + \
+        embeddings.history[2].total_tokens + \
+        embeddings.history[3].total_tokens
+    assert embeddings.total_cost == embeddings.history[0].cost + \
+        embeddings.history[1].cost + \
+        embeddings.history[2].cost + \
+        embeddings.history[3].cost
 
-
-
-# # TODO: implement rety (refactor call to openai.ChatCompletion.create)
+    ####
+    # Test chain
+    ####
+    # because the `chat` model is included twice in the chain; this check ensures we are not
+    # double-counting the totals
+    assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
+    assert chain.total_cost == chat.total_cost + embeddings.total_cost
