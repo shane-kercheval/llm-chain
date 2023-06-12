@@ -55,6 +55,7 @@ class HistoricalData(ABC):
     def history(self) -> list[Record]:
         """TODO."""
 
+
 class HistoricalUsageRecords(HistoricalData):
     """
     An object that tracks usage history i.e. `UsageRecord` objects (e.g. usage/tokens/costs in chat
@@ -122,6 +123,7 @@ class EmbeddingsModel(LargeLanguageModel):
     def history(self) -> list[EmbeddingsRecord]:
         """TODO."""
         return self._history
+
 
 class ChatModel(LargeLanguageModel):
     """
@@ -229,6 +231,7 @@ class PromptTemplate(HistoricalUsageRecords):
     @abstractmethod
     def history(self) -> list[Record]:
         """TODO."""
+
 
 class DocumentIndex(HistoricalUsageRecords):
     """

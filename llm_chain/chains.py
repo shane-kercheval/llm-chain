@@ -68,32 +68,6 @@ class Chain:
         return sum(totals)
 
 
-    # @property
-    # def total_cost(self) -> str:
-    #     """
-    #     Returns the total cost associated with usage across all models during the chain/object's
-    #     lifetime.
-
-    #     Returns `None` if none of the models know how to count costs.
-    #     """
-    #     links = [
-    #         link for link in self.chain
-    #         if _has_property(link, property_name='total_cost') and link.total_cost
-    #     ]
-    #     # Edge-case: if the same model is used multiple times in the same chain (e.g. embedding
-    #     # model) we can't loop through the chains because we'd be double-counting the totals from
-    #     # objects that are already included multiple times
-    #     # we have to build up a list of objects and include the objects if they aren't already
-    #     unique_links = []
-    #     for link in links:
-    #         if link not in unique_links:
-    #             unique_links.append(link)
-
-    #     if not unique_links:
-    #         return None
-
-    #     return sum(x.total_cost for x in unique_links)
-
 def _has_usage_history(obj: object) -> bool:
     return _has_property(obj, property_name='history') and \
         isinstance(obj.history, list) and \

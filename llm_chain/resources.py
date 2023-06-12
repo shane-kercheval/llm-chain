@@ -27,12 +27,9 @@ MODEL_COST_PER_1K_TOKENS = {
     'davinci-finetuned': 0.12,
 }
 
-
-
 ####
 # Prompts
 ####
-
 PROMPT_TEMLATE__DOC_SEARCH_STUFF = \
 """
 Answer the question at the end of the text as truthfully and accurately as possible, based on the following information provided.
