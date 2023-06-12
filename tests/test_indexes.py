@@ -86,18 +86,17 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     assert embeddings_model.history[1].cost == len("Doc X") * embeddings_model.cost_per_token
 
 def test_chroma_add_document_without_metadata():  # noqa
-    client = chromadb.Client()
-    collection = client.create_collection("test")
     cost_per_token = 13
     embeddings_model = MockRandomEmbeddings(token_counter=len, cost_per_token=cost_per_token)
-    doc_index = ChromaDocumentIndex(collection=collection, embeddings_model=embeddings_model)
+    # test without passing a collection
+    doc_index = ChromaDocumentIndex(embeddings_model=embeddings_model)
     docs = [
         Document(content='This is a document'),
         Document(content='This is a another document'),
         Document(content='This is a another another document'),
     ]
     doc_index.add_documents(docs=docs)
-    collection_docs = collection.get(include = ['documents', 'metadatas', 'embeddings'])
+    collection_docs = doc_index._collection.get(include = ['documents', 'metadatas', 'embeddings'])
     assert collection_docs['documents'] == [x.content for x in docs]
     assert collection_docs['metadatas'] == [{}, {}, {}]
     assert collection_docs['ids'] == ['0', '1', '2']

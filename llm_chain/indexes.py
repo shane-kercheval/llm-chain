@@ -1,12 +1,16 @@
 """TODO."""
+import chromadb
 from chromadb.api.models.Collection import Collection
 from llm_chain.base import Document, DocumentIndex, EmbeddingsModel
 
 class ChromaDocumentIndex(DocumentIndex):
     """TODO."""
 
-    def __init__(self, collection: Collection, embeddings_model: EmbeddingsModel) -> None:
-        self._collection = collection
+    def __init__(
+            self,
+            embeddings_model: EmbeddingsModel,
+            collection: Collection | None = None) -> None:
+        self._collection = collection or chromadb.Client().create_collection('temp')
         self._embeddings_model = embeddings_model
 
     def add_documents(self, docs: list[Document]) -> None:
