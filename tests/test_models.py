@@ -1,5 +1,5 @@
 """tests llm_chain/models.py."""
-from llm_chain.base import Document, EmbeddingsMetaData, MessageMetaData
+from llm_chain.base import Document, EmbeddingsRecord, MessageRecord
 from llm_chain.models import OpenAIChat, OpenAIEmbeddings
 from tests.conftest import MockChat, MockRandomEmbeddings
 
@@ -22,9 +22,9 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert isinstance(response, str)
     assert len(response) > 1
 
-    assert len(model.history) == 1
+    assert len(model._history) == 1
     message = model.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': 'mock'}
@@ -32,6 +32,8 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert message.total_tokens is None
     assert message.prompt_tokens is None
     assert message.response_tokens is None
+    assert message.uuid
+    assert message.timestamp
 
     assert model.previous_prompt == prompt
     assert model.previous_response == response
@@ -45,14 +47,15 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     ####
     # second interaction
     ####
+    previous_message = message
     prompt = "This is another question."
     response = model(prompt)
     assert isinstance(response, str)
     assert len(response) > 1
 
-    assert len(model.history) == 2
+    assert len(model._history) == 2
     message = model.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.metadata == {'model_name': 'mock'}
     assert message.response == response
@@ -60,6 +63,9 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert message.total_tokens is None
     assert message.prompt_tokens is None
     assert message.response_tokens is None
+    assert message.uuid
+    assert message.uuid != previous_message.uuid
+    assert message.timestamp
 
     assert model.previous_prompt == prompt
     assert model.previous_response == response
@@ -95,15 +101,17 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     expected_tokens = expected_prompt_tokens + expected_response_tokens
     expected_costs = expected_tokens * cost_per_token
 
-    assert len(model.history) == 1
+    assert len(model._history) == 1
     message = model.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.cost == expected_costs
     assert message.total_tokens == expected_tokens
     assert message.prompt_tokens == expected_prompt_tokens
     assert message.response_tokens == expected_response_tokens
+    assert message.uuid
+    assert message.timestamp
 
     assert model.previous_prompt == prompt
     assert model.previous_response == response
@@ -118,6 +126,7 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     previous_prompt_tokens = expected_prompt_tokens
     previous_response_tokens = expected_response_tokens
     previous_costs = expected_costs
+    previous_message = message
 
     ####
     # second interaction
@@ -132,15 +141,18 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     expected_tokens = expected_prompt_tokens + expected_response_tokens
     expected_costs = expected_tokens * cost_per_token
 
-    assert len(model.history) == 2
+    assert len(model._history) == 2
     message = model.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.cost == expected_costs
     assert message.total_tokens == expected_tokens
     assert message.prompt_tokens == expected_prompt_tokens
     assert message.response_tokens == expected_response_tokens
+    assert message.uuid
+    assert message.uuid != previous_message.uuid
+    assert message.timestamp
 
     assert model.previous_prompt == prompt
     assert model.previous_response == response
@@ -175,9 +187,9 @@ def test_OpenAIChat():  # noqa
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
 
-    assert len(openai_llm.history) == 1
+    assert len(openai_llm._history) == 1
     message = openai_llm.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': 'gpt-3.5-turbo'}
@@ -185,6 +197,8 @@ def test_OpenAIChat():  # noqa
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
     assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.uuid
+    assert message.timestamp
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
@@ -200,6 +214,7 @@ def test_OpenAIChat():  # noqa
     previous_total_tokens = message.total_tokens
     previous_prompt_tokens = message.prompt_tokens
     previous_response_tokens = message.response_tokens
+    previous_message = message
 
     ####
     # second interaction
@@ -218,9 +233,9 @@ def test_OpenAIChat():  # noqa
     assert openai_llm._previous_memory[3]['role'] == 'user'
     assert openai_llm._previous_memory[3]['content'] == prompt
 
-    assert len(openai_llm.history) == 2
+    assert len(openai_llm._history) == 2
     message = openai_llm.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': 'gpt-3.5-turbo'}
@@ -228,6 +243,9 @@ def test_OpenAIChat():  # noqa
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
     assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.uuid
+    assert message.uuid != previous_message.uuid
+    assert message.timestamp
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
@@ -260,16 +278,19 @@ def test_EmbeddingsModel__no_costs():  # noqa
     assert docs[0].content == doc_content_0
     assert docs[1].content == doc_content_1
 
-    assert len(model.history) == 1
-    last_metadata = model.history[0]
-    assert isinstance(last_metadata, EmbeddingsMetaData)
-    assert last_metadata.total_tokens == expected_tokens
-    assert last_metadata.cost is None
+    assert len(model._history) == 1
+    first_record = model._history[0]
+    assert isinstance(first_record, EmbeddingsRecord)
+    assert first_record.total_tokens == expected_tokens
+    assert first_record.cost is None
+    assert first_record.uuid
+    assert first_record.timestamp
 
     assert model.total_tokens == expected_tokens
     assert model.total_cost is None
 
     previous_tokens = model.total_tokens
+    previous_record = first_record
 
     ####
     # second interaction
@@ -289,16 +310,22 @@ def test_EmbeddingsModel__no_costs():  # noqa
     assert docs[0].content == doc_content_2
     assert docs[1].content == doc_content_3
 
-    assert len(model.history) == 2
-    first_meata = model.history[0]
-    assert isinstance(first_meata, EmbeddingsMetaData)
-    assert first_meata.total_tokens == previous_tokens
-    assert first_meata.cost is None
+    assert len(model._history) == 2
+    first_record = model._history[0]
+    assert isinstance(first_record, EmbeddingsRecord)
+    assert first_record.total_tokens == previous_tokens
+    assert first_record.cost is None
+    assert first_record.uuid
+    assert first_record.uuid == previous_record.uuid
+    assert first_record.timestamp
 
-    last_metadata = model.history[1]
-    assert isinstance(last_metadata, EmbeddingsMetaData)
-    assert last_metadata.total_tokens == expected_tokens
-    assert last_metadata.cost is None
+    second_record = model._history[1]
+    assert isinstance(second_record, EmbeddingsRecord)
+    assert second_record.total_tokens == expected_tokens
+    assert second_record.cost is None
+    assert second_record.uuid
+    assert second_record.uuid != previous_record.uuid
+    assert second_record.timestamp
 
     assert model.total_tokens == previous_tokens + expected_tokens
     assert model.total_cost is None
@@ -329,17 +356,20 @@ def test_EmbeddingsModel__with_costs():  # noqa
     assert docs[0].content == doc_content_0
     assert docs[1].content == doc_content_1
 
-    assert len(model.history) == 1
-    last_metadata = model.history[0]
-    assert isinstance(last_metadata, EmbeddingsMetaData)
-    assert last_metadata.total_tokens == expected_tokens
-    assert last_metadata.cost == expected_cost
+    assert len(model._history) == 1
+    first_record = model._history[0]
+    assert isinstance(first_record, EmbeddingsRecord)
+    assert first_record.total_tokens == expected_tokens
+    assert first_record.cost == expected_cost
+    assert first_record.uuid
+    assert first_record.timestamp
 
     assert model.total_tokens == expected_tokens
     assert model.total_cost == expected_cost
 
     previous_tokens = model.total_tokens
     previous_cost = model.total_cost
+    previous_record = first_record
 
     ####
     # second interaction
@@ -361,16 +391,22 @@ def test_EmbeddingsModel__with_costs():  # noqa
     assert docs[0].content == doc_content_2
     assert docs[1].content == doc_content_3
 
-    assert len(model.history) == 2
-    first_meata = model.history[0]
-    assert isinstance(first_meata, EmbeddingsMetaData)
-    assert first_meata.total_tokens == previous_tokens
-    assert first_meata.cost == previous_cost
+    assert len(model._history) == 2
+    first_record = model._history[0]
+    assert isinstance(first_record, EmbeddingsRecord)
+    assert first_record.total_tokens == previous_tokens
+    assert first_record.cost == previous_cost
+    assert first_record.uuid
+    assert first_record.uuid == previous_record.uuid
+    assert first_record.timestamp
 
-    last_metadata = model.history[1]
-    assert isinstance(last_metadata, EmbeddingsMetaData)
-    assert last_metadata.total_tokens == expected_tokens
-    assert last_metadata.cost == expected_cost
+    second_record = model._history[1]
+    assert isinstance(second_record, EmbeddingsRecord)
+    assert second_record.total_tokens == expected_tokens
+    assert second_record.cost == expected_cost
+    assert second_record.uuid
+    assert second_record.uuid != previous_record.uuid
+    assert second_record.timestamp
 
     assert model.total_tokens == previous_tokens + expected_tokens
     assert model.total_cost == previous_cost + expected_cost
@@ -390,7 +426,7 @@ def test_OpenAIEmbeddings():  # noqa
         Document(content=doc_content_1),
     ]
     embeddings = model(docs)
-    expected_cost = model.history[0].total_tokens * model.cost_per_token
+    expected_cost = model._history[0].total_tokens * model.cost_per_token
     assert isinstance(embeddings, list)
     assert isinstance(embeddings[0][0], float)
     assert len(embeddings) == len(docs)
@@ -399,13 +435,16 @@ def test_OpenAIEmbeddings():  # noqa
     assert all(isinstance(x, list) for x in embeddings)
     assert all(len(x) > 100 for x in embeddings)
 
-    assert len(model.history) == 1
-    last_metadata = model.history[0]
-    assert isinstance(last_metadata, EmbeddingsMetaData)
-    assert last_metadata.total_tokens > 0
-    assert last_metadata.cost == expected_cost
+    assert len(model._history) == 1
+    previous_record = model._history[0]
+    assert isinstance(previous_record, EmbeddingsRecord)
+    assert previous_record.total_tokens > 0
+    assert previous_record.cost == expected_cost
+    assert previous_record.uuid
+    assert previous_record.timestamp
+    assert previous_record.metadata['model_name'] == 'text-embedding-ada-002'
 
-    assert model.total_tokens == last_metadata.total_tokens
+    assert model.total_tokens == previous_record.total_tokens
     assert model.total_cost == expected_cost
 
     previous_tokens = model.total_tokens
@@ -421,7 +460,7 @@ def test_OpenAIEmbeddings():  # noqa
         Document(content=doc_content_3),
     ]
     embeddings = model(docs)
-    expected_cost = model.history[1].total_tokens * model.cost_per_token
+    expected_cost = model._history[1].total_tokens * model.cost_per_token
     assert isinstance(embeddings, list)
     assert isinstance(embeddings[0][0], float)
     assert len(embeddings) == len(docs)
@@ -429,16 +468,23 @@ def test_OpenAIEmbeddings():  # noqa
     assert docs[1].content == doc_content_3
     assert all(isinstance(x, list) for x in embeddings)
 
-    assert len(model.history) == 2
-    first_meata = model.history[0]
-    assert isinstance(first_meata, EmbeddingsMetaData)
-    assert first_meata.total_tokens == previous_tokens
-    assert first_meata.cost == previous_cost
+    assert len(model._history) == 2
+    first_record = model._history[0]
+    assert isinstance(first_record, EmbeddingsRecord)
+    assert first_record.total_tokens == previous_tokens
+    assert first_record.cost == previous_cost
+    assert first_record.uuid == previous_record.uuid
+    assert first_record.timestamp == previous_record.timestamp
+    assert first_record.metadata['model_name'] == 'text-embedding-ada-002'
 
-    last_metadata = model.history[1]
-    assert isinstance(last_metadata, EmbeddingsMetaData)
-    assert last_metadata.total_tokens > 0
-    assert last_metadata.cost == expected_cost
+    previous_record = model._history[1]
+    assert isinstance(previous_record, EmbeddingsRecord)
+    assert previous_record.total_tokens > 0
+    assert previous_record.cost == expected_cost
+    assert previous_record.uuid
+    assert previous_record.uuid != first_record.uuid
+    assert previous_record.timestamp
+    assert previous_record.metadata['model_name'] == 'text-embedding-ada-002'
 
-    assert model.total_tokens == previous_tokens + last_metadata.total_tokens
+    assert model.total_tokens == previous_tokens + previous_record.total_tokens
     assert model.total_cost == previous_cost + expected_cost

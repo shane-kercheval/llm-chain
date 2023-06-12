@@ -8,11 +8,12 @@ from tests.conftest import MockRandomEmbeddings
 
 def test_DocSearchTemplate():  # noqa
     question = "This is my question."
-    client = chromadb.Client()
-    collection = client.create_collection("test")
     cost_per_token = 13
     embeddings_model = MockRandomEmbeddings(token_counter=len, cost_per_token=cost_per_token)
-    doc_index = ChromaDocumentIndex(collection=collection, embeddings_model=embeddings_model)
+    doc_index = ChromaDocumentIndex(
+        collection=chromadb.Client().create_collection('test'),
+        embeddings_model=embeddings_model,
+    )
     docs=[
         Document(content='This is a document'),
         Document(content='This is a another document'),
@@ -20,8 +21,8 @@ def test_DocSearchTemplate():  # noqa
     ]
     doc_index.add_documents(docs=docs)
     expected_initial_tokens = sum(len(x.content) for x in docs)
-    assert embeddings_model.history[0].total_tokens == expected_initial_tokens
-    assert embeddings_model.history[0].cost == expected_initial_tokens * cost_per_token
+    assert embeddings_model._history[0].total_tokens == expected_initial_tokens
+    assert embeddings_model._history[0].cost == expected_initial_tokens * cost_per_token
 
     prompt_template = DocSearchTemplate(doc_index=doc_index, n_docs=2)
     assert prompt_template.similar_docs is None
@@ -36,7 +37,7 @@ def test_DocSearchTemplate():  # noqa
 
     # there was the call to create the initial document embeddings and then the call to create
     # the embeddings for the question
-    assert len(embeddings_model.history) == 2
+    assert len(embeddings_model._history) == 2
 
     assert prompt_template.total_tokens == embeddings_model.total_tokens
     assert prompt_template.total_cost == embeddings_model.total_cost

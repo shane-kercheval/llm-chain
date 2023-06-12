@@ -1,7 +1,7 @@
 """Contains models."""
 from collections.abc import Callable
-from llm_chain.base import ChatModel, Document, EmbeddingsMetaData, EmbeddingsModel, \
-    MemoryBuffer, MessageMetaData
+from llm_chain.base import ChatModel, Document, EmbeddingsRecord, EmbeddingsModel, MemoryBuffer, \
+    MessageRecord
 from llm_chain.resources import MODEL_COST_PER_1K_TOKENS
 
 
@@ -35,14 +35,15 @@ class OpenAIEmbeddings(EmbeddingsModel):
         self.model_name = model_name
         self.doc_prep = doc_prep
 
-    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsMetaData]:
+    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsRecord]:
         """TODO."""
         import openai
         texts = [self.doc_prep(x.content) for x in docs]
         response = openai.Embedding.create(input = texts, model=self.model_name)
         total_tokens = response['usage']['total_tokens']
         embeddings = [x['embedding'] for x in response['data']]
-        metadata = EmbeddingsMetaData(
+        metadata = EmbeddingsRecord(
+            metadata={'model_name': self.model_name},
             total_tokens=total_tokens,
             cost=self.cost_per_token * total_tokens,
         )
@@ -75,7 +76,7 @@ class OpenAIChat(ChatModel):
         self.system_message = {'role': 'system', 'content': system_message}
         self._previous_memory = None
 
-    def _run(self, prompt: str) -> MessageMetaData:
+    def _run(self, prompt: str) -> MessageRecord:
         """
         `openai.ChatCompletion.create` expects a list of messages with various roles (i.e. system,
         user, assistant). This function builds the list of messages based on the history of
@@ -87,7 +88,7 @@ class OpenAIChat(ChatModel):
         # initial message
         messages = [self.system_message]
         # build up messages from history
-        memory = self.history.copy()
+        memory = self._history.copy()
         if self.memory_strategy:
             memory = self.memory_strategy(history=memory)
         for message in memory:
@@ -105,7 +106,7 @@ class OpenAIChat(ChatModel):
         )
         self._previous_memory = messages
         response_message = response['choices'][0]['message'].content
-        return MessageMetaData(
+        return MessageRecord(
             prompt=prompt,
             response=response_message,
             metadata={'model_name': self.model_name},

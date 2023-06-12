@@ -4,9 +4,7 @@ modified prompt. Each prompt_template is given the information it needs when it 
 So for example, if a template's job is to search for relevant documents, it's provided the vector
 database when the object is created (not via __call__).
 """
-
-
-from llm_chain.base import Document, DocumentIndex, PromptTemplate
+from llm_chain.base import Document, DocumentIndex, EmbeddingsRecord, PromptTemplate
 from llm_chain.resources import PROMPT_TEMLATE__DOC_SEARCH_STUFF
 
 
@@ -33,14 +31,14 @@ class DocSearchTemplate(PromptTemplate):
                 the number of documents (returned by the doc_index) to include in the prompt
         """  # noqa
         super().__init__()
-        self.doc_index = doc_index
+        self._doc_index = doc_index
         self.n_docs = n_docs
         self.template = template if template else PROMPT_TEMLATE__DOC_SEARCH_STUFF
         self.similar_docs = None
 
     def __call__(self, prompt: str) -> str:  # noqa
         super().__call__(prompt)
-        self.similar_docs = self.doc_index.search_documents(
+        self.similar_docs = self._doc_index.search_documents(
             doc=Document(content=prompt),
             n_results=self.n_docs,
         )
@@ -50,11 +48,6 @@ class DocSearchTemplate(PromptTemplate):
             replace('{{prompt}}', prompt)
 
     @property
-    def total_tokens(self) -> str:
-        """Propagates the total_tokens used by the underlying DocumentIndex."""
-        return self.doc_index.total_tokens
-
-    @property
-    def total_cost(self) -> str:
-        """Propagates the total_cost used by the underlying DocumentIndex."""
-        return self.doc_index.total_cost
+    def history(self) -> list[EmbeddingsRecord]:
+        """TODO."""
+        return self._doc_index.history

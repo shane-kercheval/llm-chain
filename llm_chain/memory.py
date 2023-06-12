@@ -1,5 +1,5 @@
 """TODO."""
-from llm_chain.base import MemoryBuffer, MessageMetaData
+from llm_chain.base import MemoryBuffer, MessageRecord
 
 
 class MemoryBufferMessageWindow(MemoryBuffer):
@@ -9,7 +9,7 @@ class MemoryBufferMessageWindow(MemoryBuffer):
         super().__init__()
         self.last_n_messages = last_n_messages
 
-    def __call__(self, history: list[MessageMetaData]) -> list[MessageMetaData]:
+    def __call__(self, history: list[MessageRecord]) -> list[MessageRecord]:
         """TODO."""
         if self.last_n_messages == 0:
             return []
@@ -23,7 +23,7 @@ class MemoryBufferTokenWindow(MemoryBuffer):
         super().__init__()
         self.last_n_tokens = last_n_tokens
 
-    def __call__(self, history: list[MessageMetaData]) -> list[MessageMetaData]:
+    def __call__(self, history: list[MessageRecord]) -> list[MessageRecord]:
         """TODO."""
         history = reversed(history)
         memory = []

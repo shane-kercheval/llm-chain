@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 from dotenv import load_dotenv
 
-from llm_chain.base import ChatModel, Document, EmbeddingsMetaData, EmbeddingsModel, \
-    MessageMetaData
+from llm_chain.base import ChatModel, Document, EmbeddingsRecord, EmbeddingsModel, \
+    MessageRecord
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -39,7 +39,7 @@ class MockChat(ChatModel):
         self.cost_per_token = cost_per_token
         self.return_prompt = return_prompt
 
-    def _run(self, prompt: str) -> MessageMetaData:
+    def _run(self, prompt: str) -> MessageRecord:
         if self.return_prompt:
             response = self.return_prompt + prompt
         else:
@@ -49,7 +49,7 @@ class MockChat(ChatModel):
         response_tokens = self.token_counter(response) if self.token_counter else None
         total_tokens = prompt_tokens + response_tokens if self.token_counter else None
         cost = total_tokens * self.cost_per_token if self.cost_per_token else None
-        return MessageMetaData(
+        return MessageRecord(
             prompt=prompt,
             response=response,
             total_tokens=total_tokens,
@@ -71,15 +71,16 @@ class MockRandomEmbeddings(EmbeddingsModel):
         self.token_counter = token_counter
         self.cost_per_token = cost_per_token
 
-    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsMetaData]:
+    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsRecord]:
         embeddings = [np.random.rand(5).tolist() for _ in docs]
         total_tokens = sum(self.token_counter(x.content) for x in docs) \
             if self.token_counter else None
         cost = total_tokens * self.cost_per_token if self.cost_per_token else None
-        return embeddings, EmbeddingsMetaData(
+        return embeddings, EmbeddingsRecord(
             total_tokens=total_tokens,
             cost=cost,
         )
+
 
 @pytest.fixture()
 def fake_docs_abcd() -> list[Document]:
@@ -108,11 +109,11 @@ class MockABCDEmbeddings(EmbeddingsModel):
             4: [4, 4, 4, 4, 4],
         }
 
-    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsMetaData]:
+    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsRecord]:
         embeddings = [self.lookup[x.metadata['id']] for x in docs]
         total_tokens = sum(len(x.content) for x in docs)
         cost = total_tokens * self.cost_per_token
-        return embeddings, EmbeddingsMetaData(
+        return embeddings, EmbeddingsRecord(
             total_tokens=total_tokens,
             cost=cost,
         )

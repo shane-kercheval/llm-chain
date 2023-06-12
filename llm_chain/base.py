@@ -1,9 +1,28 @@
 """Contains base classes."""
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
+from uuid import uuid4
+from datetime import datetime
+from pydantic import BaseModel, Field
 
 
-class MessageMetaData(BaseModel):
+class Record(BaseModel):
+    """TODO."""
+
+    uuid: str = Field(default_factory=lambda: str(uuid4()))
+    timestamp: datetime = Field(
+        default_factory=lambda: datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+    )
+    metadata: dict = {}
+
+
+class UsageRecord(Record):
+    """TODO."""
+
+    total_tokens: int | None = None
+    cost: float | None = None
+
+
+class MessageRecord(UsageRecord):
     """
     A MessageMetaData is a single interaction with an LLM (i.e. a prompt and a response. It's used
     to capture additional information about that interaction such as the number of tokens used and
@@ -15,15 +34,10 @@ class MessageMetaData(BaseModel):
     metadata: dict | None
     prompt_tokens: int | None = None
     response_tokens: int | None = None
-    total_tokens: int | None = None
-    cost: float | None = None
 
 
-class EmbeddingsMetaData(BaseModel):
+class EmbeddingsRecord(UsageRecord):
     """TODO."""
-
-    total_tokens: int
-    cost: float | None = None
 
 
 class Document(BaseModel):
@@ -33,7 +47,41 @@ class Document(BaseModel):
     metadata: dict | None
 
 
-class LargeLanguageModel(ABC):
+class HistoricalData(ABC):
+    """An object that tracks history i.e. `Record` objects."""
+
+    @property
+    @abstractmethod
+    def history(self) -> list[Record]:
+        """TODO."""
+
+class HistoricalUsageRecords(HistoricalData):
+    """
+    An object that tracks usage history i.e. `UsageRecord` objects (e.g. usage/tokens/costs in chat
+    or embeddings model).
+    """
+
+    @property
+    @abstractmethod
+    def history(self) -> list[UsageRecord]:
+        """TODO."""
+
+    @property
+    def total_tokens(self) -> str:
+        """TODO."""
+        if self.history and self.history[0].total_tokens is not None:
+            return sum(x.total_tokens for x in self.history)
+        return None
+
+    @property
+    def total_cost(self) -> str:
+        """TODO."""
+        if self.history and self.history[0].cost is not None:
+            return sum(x.cost for x in self.history)
+        return None
+
+
+class LargeLanguageModel(HistoricalUsageRecords):
     """
     A Model (e.g. ChatGPT-3, or `text-embedding-ada-002` (embeddings model)) is a class that is
     callable and given some input (e.g. prompt (chat) or documents (embeddings)) and returns a
@@ -47,24 +95,10 @@ class LargeLanguageModel(ABC):
     def __call__(self, value: object) -> object:
         """TODO."""
 
-
     @property
     @abstractmethod
-    def total_tokens(self) -> str:
-        """
-        Returns the total number of tokens used by the model during this object's lifetime.
-
-        Returns `None` if the model does not know how to count tokens.
-        """
-
-    @property
-    @abstractmethod
-    def total_cost(self) -> str:
-        """
-        Returns the total cost associated with usage of the model during this object's lifetime.
-
-        Returns `None` if the model does not know how to count costs.
-        """
+    def history(self) -> list[Record]:
+        """TODO."""
 
 
 class EmbeddingsModel(LargeLanguageModel):
@@ -72,40 +106,22 @@ class EmbeddingsModel(LargeLanguageModel):
 
     def __init__(self) -> None:
         super().__init__()
-        self.history = []
+        self._history: list[EmbeddingsRecord] = []
 
     @abstractmethod
-    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsMetaData]:
+    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsRecord]:
         """TODO."""
 
     def __call__(self, docs: list[Document]) -> list[list[float]]:
         """TODO."""
         embeddings, metadata = self._run(docs=docs)
-        self.history.append(metadata)
+        self._history.append(metadata)
         return embeddings
 
     @property
-    def total_tokens(self) -> str:
-        """
-        Returns the total number of tokens used by the model during this object's lifetime.
-
-        Returns `None` if the model does not know how to count tokens.
-        """
-        if self.history:
-            return sum(x.total_tokens for x in self.history)
-        return None
-
-    @property
-    def total_cost(self) -> str:
-        """
-        Returns the total cost associated with usage of the model during this object's lifetime.
-
-        Returns `None` if the model does not know how to count costs.
-        """
-        if self.history and self.history[0].cost is not None:
-            return sum(x.cost for x in self.history)
-        return None
-
+    def history(self) -> list[EmbeddingsRecord]:
+        """TODO."""
+        return self._history
 
 class ChatModel(LargeLanguageModel):
     """
@@ -117,10 +133,10 @@ class ChatModel(LargeLanguageModel):
 
     def __init__(self):
         super().__init__()
-        self.history: list[MessageMetaData] = []
+        self._history: list[MessageRecord] = []
 
     @abstractmethod
-    def _run(self, prompt: str) -> MessageMetaData:
+    def _run(self, prompt: str) -> MessageRecord:
         """Subclasses should override this function and generate responses from the LLM."""
 
 
@@ -132,11 +148,16 @@ class ChatModel(LargeLanguageModel):
             prompt: the string prompt/question to the model.
         """
         response = self._run(prompt)
-        self.history.append(response)
+        self._history.append(response)
         return response.response
 
     @property
-    def previous_message(self) -> MessageMetaData:
+    def history(self) -> list[MessageRecord]:
+        """TODO."""
+        return self._history
+
+    @property
+    def previous_message(self) -> MessageRecord:
         """Returns the last/previous message (MessageMetaData) associated with the chat model."""
         if len(self.history) == 0:
             return None
@@ -156,18 +177,6 @@ class ChatModel(LargeLanguageModel):
         previous_message = self.previous_message
         if previous_message:
             return previous_message.response
-        return None
-
-    @property
-    def total_tokens(self) -> str:
-        """
-        Returns the total number of tokens used by the model during this object's lifetime.
-
-        Returns `None` if the model does not know how to count tokens.
-        """
-        # if there is no token_counter then there won't be a way to calculate the number of tokens
-        if self.previous_message and self.previous_message.total_tokens:
-            return sum(x.total_tokens for x in self.history)
         return None
 
     @property
@@ -195,28 +204,16 @@ class ChatModel(LargeLanguageModel):
             return sum(x.response_tokens for x in self.history)
         return None
 
-    @property
-    def total_cost(self) -> str:
-        """
-        Returns the total cost associated with usage of the model during this object's lifetime.
-
-        Returns `None` if the model does not know how to count costs.
-        """
-        # if there is no cost_per_token then there won't be a way to calculate the the cost
-        if self.previous_message and self.previous_message.cost:
-            return sum(x.cost for x in self.history)
-        return None
-
 
 class MemoryBuffer(ABC):
     """TODO."""
 
     @abstractmethod
-    def __call__(self, history: list[MessageMetaData]) -> list[MessageMetaData]:
+    def __call__(self, history: list[MessageRecord]) -> list[MessageRecord]:
         """TODO."""
 
 
-class PromptTemplate(ABC):
+class PromptTemplate(HistoricalUsageRecords):
     """
     A prompt_template is a callable object that takes a prompt (e.g. user query) as input and
     returns a modified prompt. Each prompt_template is given the information it needs when it is
@@ -228,8 +225,12 @@ class PromptTemplate(ABC):
     def __call__(self, prompt: str) -> str:
         """TODO."""
 
+    @property
+    @abstractmethod
+    def history(self) -> list[Record]:
+        """TODO."""
 
-class DocumentIndex(ABC):
+class DocumentIndex(HistoricalUsageRecords):
     """
     A DocumentIndex is simply a way of adding and searching for `Document` objects. For example, it
     could be a wrapper around chromadb.
@@ -248,19 +249,5 @@ class DocumentIndex(ABC):
 
     @property
     @abstractmethod
-    def total_tokens(self) -> str:
-        """
-        Returns the total number of tokens used by the model during this object's lifetime.
-
-        Returns `None` if the model does not know how to count tokens.
-        """
-
-    @property
-    @abstractmethod
-    def total_cost(self) -> str:
-        """
-        Returns the total cost associated with usage of the model during this object's lifetime.
-
-        Returns `None` if the model does not know how to count costs.
-        """
-
+    def history(self) -> list[Record]:
+        """TODO."""

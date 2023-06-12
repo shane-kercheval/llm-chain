@@ -22,9 +22,9 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     assert chroma_db.total_cost == initial_expected_cost
     assert chroma_db.total_tokens == embeddings_model.total_tokens
     assert chroma_db.total_cost == embeddings_model.total_cost
-    assert len(embeddings_model.history) == 1
-    assert embeddings_model.history[0].total_tokens == initial_expected_tokens
-    assert embeddings_model.history[0].cost == initial_expected_cost
+    assert len(embeddings_model._history) == 1
+    assert embeddings_model._history[0].total_tokens == initial_expected_tokens
+    assert embeddings_model._history[0].cost == initial_expected_cost
 
     # verify documents and embeddings where added to collection
     collection_docs = collection.get(include = ['documents', 'metadatas', 'embeddings'])
@@ -56,11 +56,11 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     assert chroma_db.total_cost == new_expected_cost
     assert chroma_db.total_tokens == embeddings_model.total_tokens
     assert chroma_db.total_cost == embeddings_model.total_cost
-    assert len(embeddings_model.history) == 2
-    assert embeddings_model.history[0].total_tokens == initial_expected_tokens
-    assert embeddings_model.history[0].cost == initial_expected_cost
-    assert embeddings_model.history[1].total_tokens == len("Doc X")
-    assert embeddings_model.history[1].cost == len("Doc X") * embeddings_model.cost_per_token
+    assert len(embeddings_model._history) == 2
+    assert embeddings_model._history[0].total_tokens == initial_expected_tokens
+    assert embeddings_model._history[0].cost == initial_expected_cost
+    assert embeddings_model._history[1].total_tokens == len("Doc X")
+    assert embeddings_model._history[1].cost == len("Doc X") * embeddings_model.cost_per_token
 
     # search based on third doc
     results = chroma_db.search_documents(doc=fake_docs_abcd[2], n_results=1)
@@ -77,13 +77,13 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     assert chroma_db.total_cost == new_expected_cost
     assert chroma_db.total_tokens == embeddings_model.total_tokens
     assert chroma_db.total_cost == embeddings_model.total_cost
-    assert len(embeddings_model.history) == 3
-    assert embeddings_model.history[0].total_tokens == initial_expected_tokens
-    assert embeddings_model.history[0].cost == initial_expected_cost
-    assert embeddings_model.history[1].total_tokens == len("Doc X")
-    assert embeddings_model.history[1].cost == len("Doc X") * embeddings_model.cost_per_token
-    assert embeddings_model.history[1].total_tokens == len("Doc X")
-    assert embeddings_model.history[1].cost == len("Doc X") * embeddings_model.cost_per_token
+    assert len(embeddings_model._history) == 3
+    assert embeddings_model._history[0].total_tokens == initial_expected_tokens
+    assert embeddings_model._history[0].cost == initial_expected_cost
+    assert embeddings_model._history[1].total_tokens == len("Doc X")
+    assert embeddings_model._history[1].cost == len("Doc X") * embeddings_model.cost_per_token
+    assert embeddings_model._history[1].total_tokens == len("Doc X")
+    assert embeddings_model._history[1].cost == len("Doc X") * embeddings_model.cost_per_token
 
 def test_chroma_add_document_without_metadata():  # noqa
     cost_per_token = 13

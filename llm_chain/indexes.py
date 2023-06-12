@@ -1,7 +1,7 @@
 """TODO."""
 import chromadb
 from chromadb.api.models.Collection import Collection
-from llm_chain.base import Document, DocumentIndex, EmbeddingsModel
+from llm_chain.base import Document, DocumentIndex, EmbeddingsModel, EmbeddingsRecord
 
 class ChromaDocumentIndex(DocumentIndex):
     """TODO."""
@@ -46,11 +46,6 @@ class ChromaDocumentIndex(DocumentIndex):
         return similar_docs
 
     @property
-    def total_tokens(self) -> str:
-        """Propagates the total_tokens used by the underlying EmbeddingsModel."""
-        return self._embeddings_model.total_tokens
-
-    @property
-    def total_cost(self) -> str:
-        """Propagates the total_cost used by the underlying EmbeddingsModel."""
-        return self._embeddings_model.total_cost
+    def history(self) -> list[EmbeddingsRecord]:
+        """TODO."""
+        return self._embeddings_model.history
