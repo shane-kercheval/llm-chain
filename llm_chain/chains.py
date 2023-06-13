@@ -3,7 +3,7 @@ from collections.abc import Callable
 from typing import Any
 import inspect
 
-from llm_chain.base import UsageRecord
+from llm_chain.base import Record, UsageRecord
 
 
 class Chain:
@@ -22,8 +22,16 @@ class Chain:
                 result = link(result)
         return result
 
-    def _get_unique_records(self) -> list[UsageRecord]:
-        histories = [link.history for link in self._links if _has_usage_history(link)]
+    def __getitem__(self, index: int) -> Callable:
+        return self._links[index]
+
+    def __len__(self) -> int:
+        return len(self._links)
+
+    @property
+    def history(self) -> list[Record]:
+        """TODO."""
+        histories = [link.history for link in self._links if _has_history(link)]
         # Edge-case: if the same model is used multiple times in the same chain (e.g. embedding
         # model to embed documents and then embed query to search documents) then we can't loop
         # through the chains because we'd be double-counting the history from those objects.
@@ -36,8 +44,12 @@ class Chain:
                 if record.uuid not in unique_uuids:
                     unique_records.append(record)
                     unique_uuids |= {record.uuid}
-
         return sorted(unique_records, key=lambda x: x.timestamp)
+
+    @property
+    def usage_history(self) -> list[UsageRecord]:
+        """TODO."""
+        return [x for x in self.history if isinstance(x, UsageRecord)]
 
     @property
     def total_tokens(self) -> str:
@@ -47,7 +59,7 @@ class Chain:
 
         Returns `None` if none of the models knows how to count tokens.
         """
-        records = self._get_unique_records()
+        records = self.usage_history
         totals = [x.total_tokens for x in records if x.total_tokens]
         if not totals:
             return None
@@ -61,18 +73,19 @@ class Chain:
 
         Returns `None` if none of the models knows how to count cost.
         """
-        records = self._get_unique_records()
+        records = self.usage_history
         totals = [x.cost for x in records if x.cost]
         if not totals:
             return None
         return sum(totals)
 
 
-def _has_usage_history(obj: object) -> bool:
+def _has_history(obj: object) -> bool:
+    """TODO."""
     return _has_property(obj, property_name='history') and \
         isinstance(obj.history, list) and \
         len(obj.history) > 0 and \
-        isinstance(obj.history[0], UsageRecord)
+        isinstance(obj.history[0], Record)
 
 
 def _has_property(obj: object, property_name: str) -> bool:

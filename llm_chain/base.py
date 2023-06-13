@@ -14,12 +14,18 @@ class Record(BaseModel):
     )
     metadata: dict = {}
 
+    def __str__(self) -> str:
+        return f"timestamp: {self.timestamp}; metadata: {self.metadata}"
+
 
 class UsageRecord(Record):
     """TODO."""
 
     total_tokens: int | None = None
     cost: float | None = None
+
+    def __str__(self) -> str:
+        return super().__str__() + f" total_tokens: {self.total_tokens:,}; cost: ${self.cost:.6f}"
 
 
 class MessageRecord(UsageRecord):
@@ -34,6 +40,12 @@ class MessageRecord(UsageRecord):
     metadata: dict | None
     prompt_tokens: int | None = None
     response_tokens: int | None = None
+
+    def __str__(self) -> str:
+        return f"timestamp: {self.timestamp}; prompt: \"{self.prompt.strip()[0:20]}...\"; "\
+            f"response: \"{self.response.strip()[0:20]}...\";  " \
+            f"total_tokens: {self.total_tokens:,}; cost: ${self.cost:.6f} " \
+            f"metadata: {self.metadata}"
 
 
 class EmbeddingsRecord(UsageRecord):

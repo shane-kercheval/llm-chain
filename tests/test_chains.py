@@ -1,6 +1,6 @@
 """TODO."""
 from time import sleep
-from llm_chain.base import Document, HistoricalUsageRecords, UsageRecord
+from llm_chain.base import Document, HistoricalUsageRecords, Record, UsageRecord
 from llm_chain.chains import Chain, _has_property
 from tests.conftest import MockChat, MockRandomEmbeddings
 
@@ -14,29 +14,39 @@ class MockRecords(HistoricalUsageRecords):
         sleep(0.01)
         self.record_b = UsageRecord(metadata={'id': 'record_b'}, total_tokens=3, cost=5)
         sleep(0.01)
+        self.record_d = Record(metadata={'id': 'record_d'})
+        sleep(0.01)
         self.record_c = UsageRecord(metadata={'id': 'record_c'}, total_tokens=6, cost=8)
+        sleep(0.01)
+        self.record_e = Record(metadata={'id': 'record_e'})
+        self.records = [self.record_a, self.record_b, self.record_d, self.record_c, self.record_e]
 
     @property
     def history(self) -> list[UsageRecord]:
         """Return mock history."""
-        return [self.record_a, self.record_b, self.record_c]
-
+        return self.records
 
 class MockNoUsageRecords(HistoricalUsageRecords):
     """Mock Historical Records to ensure we are not double-counting unique records."""
 
     def __init__(self) -> None:
         super().__init__()
+
         self.record_a = UsageRecord(metadata={'id': 'record_a'}, total_tokens=None, cost=None)
         sleep(0.01)
         self.record_b = UsageRecord(metadata={'id': 'record_b'}, total_tokens=None, cost=None)
         sleep(0.01)
+        self.record_d = Record(metadata={'id': 'record_d'})
+        sleep(0.01)
         self.record_c = UsageRecord(metadata={'id': 'record_c'}, total_tokens=None, cost=None)
+        sleep(0.01)
+        self.record_e = Record(metadata={'id': 'record_e'})
+        self.records = [self.record_a, self.record_b, self.record_d, self.record_c, self.record_e]
 
     @property
     def history(self) -> list[UsageRecord]:
         """Return mock history."""
-        return [self.record_a, self.record_b, self.record_c]
+        return self.records
 
 
 class MockHistoryWrapper:
@@ -49,7 +59,6 @@ class MockHistoryWrapper:
     def history(self) -> list[UsageRecord]:
         """Return mock history."""
         return self._hist_obj.history
-
 
 def test_chain():  # noqa
     # test empty chain
@@ -76,6 +85,12 @@ def test_chain():  # noqa
     assert chain(10) == 23
     assert chain(value=10) == 23
 
+def test_chain_index_len():  # noqa
+    chain = Chain(links=[])
+    assert len(chain) == 0
+    chain = Chain(links=['test'])
+    assert chain[0] == 'test'
+
 def test_has_property():  # noqa
     chat = MockChat()
     lambda_func = lambda x: x  # noqa
@@ -84,12 +99,27 @@ def test_has_property():  # noqa
     assert not _has_property(obj=chat, property_name='does_not_have')
     assert not _has_property(obj=lambda_func, property_name='does_not_have')
 
-def test_get_unique_records_with_usage():  # noqa
+def test_history():  # noqa
     mock_records = MockRecords()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
     chain = Chain(links=[mock_records, mock_wrapper, mock_records])
-    records = chain._get_unique_records()
+    records = chain.history
+    assert records == mock_records.records
+
+    mock_records = MockNoUsageRecords()
+    mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
+    # make sure historical records are only counted once
+    chain = Chain(links=[mock_records, mock_wrapper, mock_records])
+    records = chain.history
+    assert records == mock_records.records
+
+def test_usage_history():  # noqa
+    mock_records = MockRecords()
+    mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
+    # make sure historical records are only counted once
+    chain = Chain(links=[mock_records, mock_wrapper, mock_records])
+    records = chain.usage_history
     assert records[0] == mock_records.record_a
     assert records[1] == mock_records.record_b
     assert records[2] == mock_records.record_c
@@ -101,13 +131,13 @@ def test_get_unique_records_with_usage():  # noqa
         mock_records.record_b.cost + \
         mock_records.record_c.cost
 
-def test_get_unique_records_no_usage():  # noqa
+def testusage_history_no_usage():  # noqa
     sum([])
     mock_records = MockNoUsageRecords()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
     chain = Chain(links=[mock_records, mock_wrapper, mock_records])
-    records = chain._get_unique_records()
+    records = chain.usage_history
     assert records[0] == mock_records.record_a
     assert records[1] == mock_records.record_b
     assert records[2] == mock_records.record_c
