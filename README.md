@@ -11,6 +11,7 @@ Simple and extensible LLM Chaining (pre-alpha)
 
 ## TODO
 
+- HTMLLoader -> VectorDB -> question -> 
 - implement DocumentPrompt (stuff docs + query): input: prompt; output prompt ;;
 - test MemoryBufferTokenWindow
 - implement streaming
