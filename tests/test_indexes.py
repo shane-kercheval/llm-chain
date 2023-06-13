@@ -1,19 +1,45 @@
 """test llm_chain/vector_db/chroma.db."""
 import chromadb
-from llm_chain.base import Document
+from llm_chain.base import Document, DocumentIndex, Record
 from llm_chain.indexes import ChromaDocumentIndex
 from tests.conftest import MockABCDEmbeddings, MockRandomEmbeddings
 
 
-def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
+class MockIndex(DocumentIndex):  # noqa
+    def __init__(self) -> None:
+        super().__init__()
+        self.documents = []
 
+    def add(self, docs: list[Document]) -> None:  # noqa
+        self.documents += docs
+
+    def search(self, doc: Document, n_results: int = 3) -> list[Document]:  # noqa
+        return self.documents
+
+    @property
+    def history(self) -> list[Record]:  # noqa
+        return [Record()]
+
+
+def test_base_index():  # noqa
+    mock_index = MockIndex()
+    # test `call()` when passing list[Document] which should call `add_documents()`
+    documents_to_add = [Document(content='Doc A'), Document(content='Doc A')]
+    return_value = mock_index(documents_to_add)
+    assert return_value is None
+    assert mock_index.documents == documents_to_add
+    # test `call()` when passing Document which should call `search_documents()`
+    return_value = mock_index(Document(content='doc'))
+    assert return_value == documents_to_add
+
+def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     embeddings_model = MockABCDEmbeddings()
     client = chromadb.Client()
     collection = client.create_collection("test")
     chroma_db = ChromaDocumentIndex(collection=collection, embeddings_model=embeddings_model)
     assert chroma_db.total_tokens is None
     assert chroma_db.total_cost is None
-    chroma_db.add_documents(docs=fake_docs_abcd)
+    chroma_db.add(docs=fake_docs_abcd)
 
     initial_expected_tokens = len("Doc X") * len(fake_docs_abcd)
     initial_expected_cost = initial_expected_tokens * embeddings_model.cost_per_token
@@ -34,7 +60,7 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     assert collection_docs['embeddings'] == list(embeddings_model.lookup.values())
 
     # search based on first doc
-    results = chroma_db.search_documents(doc=fake_docs_abcd[1], n_results=3)
+    results = chroma_db.search(doc=fake_docs_abcd[1], n_results=3)
     assert len(results) == 3
     # first/best result should match doc 1
     assert results[0].content == fake_docs_abcd[1].content
@@ -63,7 +89,7 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     assert embeddings_model._history[1].cost == len("Doc X") * embeddings_model.cost_per_token
 
     # search based on third doc
-    results = chroma_db.search_documents(doc=fake_docs_abcd[2], n_results=1)
+    results = chroma_db.search(doc=fake_docs_abcd[2], n_results=1)
     assert len(results) == 1
     # first/best result should match doc 2
     assert results[0].content == fake_docs_abcd[2].content
@@ -95,12 +121,12 @@ def test_chroma_add_document_without_metadata():  # noqa
         Document(content='This is a another document'),
         Document(content='This is a another another document'),
     ]
-    doc_index.add_documents(docs=docs)
+    doc_index.add(docs=docs)
     collection_docs = doc_index._collection.get(include = ['documents', 'metadatas', 'embeddings'])
     assert collection_docs['documents'] == [x.content for x in docs]
     assert collection_docs['metadatas'] == [{}, {}, {}]
     assert collection_docs['ids'] == ['0', '1', '2']
     assert len(collection_docs['embeddings']) == len(docs)
 
-    results = doc_index.search_documents(doc=docs[0], n_results=1)
+    results = doc_index.search(doc=docs[0], n_results=1)
     assert 'distance' in results[0].metadata

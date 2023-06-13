@@ -255,12 +255,22 @@ class DocumentIndex(HistoricalUsageRecords):
     (e.g. if it uses an EmbeddingModel), or return None if not applicable.
     """
 
+    def __call__(
+            self,
+            value: Document | list[Document],
+            n_results: int = 3) -> list[Document] | None:
+        """TODO."""
+        if isinstance(value, list):
+            return self.add(docs=value)
+        assert isinstance(value, Document)
+        return self.search(doc=value, n_results=n_results)
+
     @abstractmethod
-    def add_documents(self, docs: list[Document]) -> None:
+    def add(self, docs: list[Document]) -> None:
         """Add documents to the underlying index/database."""
 
     @abstractmethod
-    def search_documents(self, doc: Document, n_results: int = 3) -> list[Document]:
+    def search(self, doc: Document, n_results: int = 3) -> list[Document]:
         """Search for documents in the underlying index/database."""
 
     @property

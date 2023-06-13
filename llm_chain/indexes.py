@@ -3,6 +3,7 @@ import chromadb
 from chromadb.api.models.Collection import Collection
 from llm_chain.base import Document, DocumentIndex, EmbeddingsModel, EmbeddingsRecord
 
+
 class ChromaDocumentIndex(DocumentIndex):
     """TODO."""
 
@@ -13,7 +14,7 @@ class ChromaDocumentIndex(DocumentIndex):
         self._collection = collection or chromadb.Client().create_collection('temp')
         self._embeddings_model = embeddings_model
 
-    def add_documents(self, docs: list[Document]) -> None:
+    def add(self, docs: list[Document]) -> None:
         """TODO."""
         embeddings = self._embeddings_model(docs=docs)
         metadatas = [x.metadata or {} for x in docs]
@@ -25,7 +26,7 @@ class ChromaDocumentIndex(DocumentIndex):
             ids=[str(x) for x in range(len(docs))],
         )
 
-    def search_documents(self, doc: Document, n_results: int = 3) -> list[Document]:
+    def search(self, doc: Document, n_results: int = 3) -> list[Document]:
         """TODO."""
         embeddings = self._embeddings_model(docs=[doc])
         results = self._collection.query(

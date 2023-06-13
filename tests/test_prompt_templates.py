@@ -19,7 +19,7 @@ def test_DocSearchTemplate():  # noqa
         Document(content='This is a another document'),
         Document(content='This is a another another document'),
     ]
-    doc_index.add_documents(docs=docs)
+    doc_index.add(docs=docs)
     expected_initial_tokens = sum(len(x.content) for x in docs)
     assert embeddings_model._history[0].total_tokens == expected_initial_tokens
     assert embeddings_model._history[0].cost == expected_initial_tokens * cost_per_token
