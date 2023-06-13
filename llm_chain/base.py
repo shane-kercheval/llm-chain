@@ -25,7 +25,8 @@ class UsageRecord(Record):
     cost: float | None = None
 
     def __str__(self) -> str:
-        return super().__str__() + f" total_tokens: {self.total_tokens:,}; cost: ${self.cost:.6f}"
+        return f"timestamp: {self.timestamp}; cost: ${self.cost:.6f}; " \
+            f"total_tokens: {self.total_tokens:,}; metadata: {self.metadata}"
 
 
 class MessageRecord(UsageRecord):
@@ -44,7 +45,7 @@ class MessageRecord(UsageRecord):
     def __str__(self) -> str:
         return f"timestamp: {self.timestamp}; prompt: \"{self.prompt.strip()[0:20]}...\"; "\
             f"response: \"{self.response.strip()[0:20]}...\";  " \
-            f"total_tokens: {self.total_tokens:,}; cost: ${self.cost:.6f} " \
+            f"cost: ${self.cost:.6f}; total_tokens: {self.total_tokens:,}; " \
             f"metadata: {self.metadata}"
 
 

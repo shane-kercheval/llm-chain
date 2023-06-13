@@ -27,3 +27,14 @@ def split_documents(docs: list[Document], max_chunk_size: int = 500) -> list[Doc
             new_docs.append(doc)
 
     return new_docs
+
+
+def html_page_loader(url: str) -> str:
+    """TODO."""
+    # TODO: test
+    import requests
+    from bs4 import BeautifulSoup
+    response = requests.get(url)
+    assert response.status_code == 200
+    soup = BeautifulSoup(response.content, 'html.parser')
+    return soup.get_text().strip()
