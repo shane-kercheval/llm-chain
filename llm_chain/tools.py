@@ -1,4 +1,5 @@
 """TODO."""
+from itertools import islice
 from llm_chain.base import Document
 
 
@@ -38,3 +39,13 @@ def html_page_loader(url: str) -> str:
     assert response.status_code == 200
     soup = BeautifulSoup(response.content, 'html.parser')
     return soup.get_text().strip()
+
+
+def duckduckgo_search(query: str, top_n: int = 3) -> list[dict]:
+    """TODO."""
+    from duckduckgo_search import DDGS
+    with DDGS() as ddgs:
+        ddgs_generator = ddgs.text(query, region='wt-wt', safesearch='Off', timelimit='y')
+        return list(islice(ddgs_generator, top_n))
+
+

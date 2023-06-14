@@ -1,6 +1,6 @@
 """tests llm_chain/tools.py."""
 from llm_chain.base import Document
-from llm_chain.tools import split_documents
+from llm_chain.tools import duckduckgo_search, split_documents
 
 
 def test_split_documents():  # noqa
@@ -65,3 +65,17 @@ def test_split_documents():  # noqa
 
     result = split_documents(docs, max_chunk_size)
     assert result == expected_result
+
+def test_duckduckgo_search():  # noqa
+    query = "What is an agent in langchain?"
+    results = duckduckgo_search(query=query, top_n=1)
+    assert len(results) == 1
+    assert 'title' in results[0]
+    assert 'href' in results[0]
+    assert 'body' in results[0]
+
+    results = duckduckgo_search(query=query, top_n=5)
+    assert len(results) == 5
+    assert 'title' in results[0]
+    assert 'href' in results[0]
+    assert 'body' in results[0]

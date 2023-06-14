@@ -1,6 +1,7 @@
 """tests llm_chain/models.py."""
 from llm_chain.base import Document, EmbeddingsRecord, MessageRecord
 from llm_chain.models import OpenAIChat, OpenAIEmbeddings
+from llm_chain.resources import MODEL_COST_PER_TOKEN
 from tests.conftest import MockChat, MockRandomEmbeddings
 
 
@@ -164,7 +165,8 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     assert model.total_response_tokens == expected_response_tokens + previous_response_tokens
 
 def test_OpenAIChat():  # noqa
-    openai_llm = OpenAIChat(model_name='gpt-3.5-turbo')
+    model_name = 'gpt-3.5-turbo'
+    openai_llm = OpenAIChat(model_name=model_name)
     assert openai_llm.previous_message is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
@@ -192,7 +194,7 @@ def test_OpenAIChat():  # noqa
     assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': 'gpt-3.5-turbo'}
+    assert message.metadata == {'model_name': model_name}
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -202,7 +204,7 @@ def test_OpenAIChat():  # noqa
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == 0.002 / 1000
+    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert openai_llm.total_cost == message.cost
     assert openai_llm.total_tokens == message.total_tokens
     assert openai_llm.total_prompt_tokens == message.prompt_tokens
@@ -238,7 +240,7 @@ def test_OpenAIChat():  # noqa
     assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': 'gpt-3.5-turbo'}
+    assert message.metadata == {'model_name': model_name}
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -249,7 +251,7 @@ def test_OpenAIChat():  # noqa
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == 0.002 / 1000
+    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert openai_llm.total_cost == previous_cost + message.cost
     assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
     assert openai_llm.total_prompt_tokens == previous_prompt_tokens + message.prompt_tokens

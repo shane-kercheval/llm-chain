@@ -2,7 +2,7 @@
 from collections.abc import Callable
 from llm_chain.base import ChatModel, Document, EmbeddingsRecord, EmbeddingsModel, MemoryBuffer, \
     MessageRecord
-from llm_chain.resources import MODEL_COST_PER_1K_TOKENS
+from llm_chain.resources import MODEL_COST_PER_TOKEN
 
 
 class OpenAIEmbeddings(EmbeddingsModel):
@@ -28,10 +28,7 @@ class OpenAIEmbeddings(EmbeddingsModel):
                 function that cleans the text of each doc before creating embeddings.
         """
         super().__init__()
-        model_cost_per_1k_tokens = {
-            'text-embedding-ada-002': 0.0004,
-        }
-        self.cost_per_token = model_cost_per_1k_tokens[model_name] / 1000
+        self.cost_per_token = MODEL_COST_PER_TOKEN[model_name]
         self.model_name = model_name
         self.doc_prep = doc_prep
 
@@ -71,7 +68,7 @@ class OpenAIChat(ChatModel):
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self.cost_per_token = MODEL_COST_PER_1K_TOKENS[model_name] / 1000
+        self.cost_per_token = MODEL_COST_PER_TOKEN[model_name]
         self.memory_strategy = memory_strategy
         self.system_message = {'role': 'system', 'content': system_message}
         self._previous_memory = None
@@ -106,12 +103,16 @@ class OpenAIChat(ChatModel):
         )
         self._previous_memory = messages
         response_message = response['choices'][0]['message'].content
+        prompt_tokens = response['usage'].prompt_tokens
+        completion_tokens = response['usage'].completion_tokens
+        cost = (prompt_tokens * self.cost_per_token['input']) + \
+            (completion_tokens * self.cost_per_token['output'])
         return MessageRecord(
             prompt=prompt,
             response=response_message,
             metadata={'model_name': self.model_name},
-            prompt_tokens=response['usage'].prompt_tokens,
-            response_tokens=response['usage'].completion_tokens,
+            prompt_tokens=prompt_tokens,
+            response_tokens=completion_tokens,
             total_tokens=response['usage'].total_tokens,
-            cost=response['usage'].total_tokens * self.cost_per_token,
+            cost=cost,
         )
