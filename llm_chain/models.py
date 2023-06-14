@@ -15,6 +15,7 @@ class OpenAIEmbeddings(EmbeddingsModel):
             self,
             model_name: str,
             doc_prep: Callable[[str], str] = lambda x: x.strip().replace('\n', ' '),
+            timeout: int = 10,
             ) -> None:
         """
         TODO.
@@ -26,17 +27,23 @@ class OpenAIEmbeddings(EmbeddingsModel):
             model_name: e.g. 'text-embedding-ada-002'
             doc_prep:
                 function that cleans the text of each doc before creating embeddings.
+            timeout: TODO
         """
         super().__init__()
         self.cost_per_token = MODEL_COST_PER_TOKEN[model_name]
         self.model_name = model_name
         self.doc_prep = doc_prep
+        self.timeout = timeout
 
     def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsRecord]:
         """TODO."""
         import openai
         texts = [self.doc_prep(x.content) for x in docs]
-        response = openai.Embedding.create(input = texts, model=self.model_name)
+        response = openai.Embedding.create(
+            input = texts,
+            model=self.model_name,
+            timeout=self.timeout,
+        )
         total_tokens = response['usage']['total_tokens']
         embeddings = [x['embedding'] for x in response['data']]
         metadata = EmbeddingsRecord(
@@ -60,6 +67,7 @@ class OpenAIChat(ChatModel):
             max_tokens: int = 2000,
             system_message: str = 'You are a helpful assistant.',
             memory_strategy: MemoryBuffer | None = None,  # noqa
+            timeout: int = 10,
             ) -> None:
         """TODO."""
         # TODO: doc string model_name e.g. 'gpt-3.5-turbo'
@@ -72,6 +80,7 @@ class OpenAIChat(ChatModel):
         self.memory_strategy = memory_strategy
         self.system_message = {'role': 'system', 'content': system_message}
         self._previous_memory = None
+        self.timeout = timeout
 
     def _run(self, prompt: str) -> MessageRecord:
         """
@@ -100,6 +109,7 @@ class OpenAIChat(ChatModel):
             messages=messages,
             temperature=self.temperature,
             max_tokens=self.max_tokens,
+            timeout=self.timeout,
         )
         self._previous_memory = messages
         response_message = response['choices'][0]['message'].content
