@@ -9,8 +9,8 @@ class Record(BaseModel):
     """TODO."""
 
     uuid: str = Field(default_factory=lambda: str(uuid4()))
-    timestamp: datetime = Field(
-        default_factory=lambda: datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'),
+    timestamp: str = Field(
+        default_factory=lambda: datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
     )
     metadata: dict = {}
 

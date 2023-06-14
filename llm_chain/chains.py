@@ -3,7 +3,7 @@ from collections.abc import Callable
 from typing import Any
 import inspect
 
-from llm_chain.base import Record, UsageRecord
+from llm_chain.base import MessageRecord, Record, UsageRecord
 
 
 class Chain:
@@ -50,6 +50,11 @@ class Chain:
     def usage_history(self) -> list[UsageRecord]:
         """TODO."""
         return [x for x in self.history if isinstance(x, UsageRecord)]
+
+    @property
+    def message_history(self) -> list[UsageRecord]:
+        """TODO."""
+        return [x for x in self.history if isinstance(x, MessageRecord)]
 
     @property
     def total_tokens(self) -> str:
