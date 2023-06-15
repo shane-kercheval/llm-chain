@@ -1,7 +1,7 @@
 """TODO."""
 from time import sleep
 from llm_chain.base import Document, HistoricalUsageRecords, MessageRecord, Record, UsageRecord
-from llm_chain.chains import Chain, _has_property
+from llm_chain.chains import Chain, _has_property, Value
 from tests.conftest import MockChat, MockRandomEmbeddings
 
 
@@ -67,6 +67,13 @@ class MockHistoryWrapper:
     def history(self) -> list[UsageRecord]:
         """Return mock history."""
         return self._hist_obj.history
+
+
+def test_Value():  # noqa
+    value = Value()
+    assert value() is None
+    assert value('test') == 'test'
+    assert value() == 'test'
 
 
 def test_chain():  # noqa

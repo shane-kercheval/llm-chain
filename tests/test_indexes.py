@@ -39,8 +39,14 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     chroma_db = ChromaDocumentIndex(collection=collection, embeddings_model=embeddings_model)
     assert chroma_db.total_tokens is None
     assert chroma_db.total_cost is None
-    chroma_db.add(docs=fake_docs_abcd)
+    chroma_db.add(docs=None)
+    assert chroma_db.total_tokens is None
+    assert chroma_db.total_cost is None
+    chroma_db.add(docs=[])
+    assert chroma_db.total_tokens is None
+    assert chroma_db.total_cost is None
 
+    chroma_db.add(docs=fake_docs_abcd)
     initial_expected_tokens = len("Doc X") * len(fake_docs_abcd)
     initial_expected_cost = initial_expected_tokens * embeddings_model.cost_per_token
     # test that usage reflects underlying usage in embeddings
@@ -56,7 +62,7 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     collection_docs = collection.get(include = ['documents', 'metadatas', 'embeddings'])
     assert collection_docs['documents'] == [x.content for x in fake_docs_abcd]
     assert collection_docs['metadatas'] == [x.metadata for x in fake_docs_abcd]
-    assert collection_docs['ids'] == ['0', '1', '2', '3']
+    assert len(collection_docs['ids']) == 4
     assert collection_docs['embeddings'] == list(embeddings_model.lookup.values())
 
     # search based on first doc
@@ -125,8 +131,23 @@ def test_chroma_add_document_without_metadata():  # noqa
     collection_docs = doc_index._collection.get(include = ['documents', 'metadatas', 'embeddings'])
     assert collection_docs['documents'] == [x.content for x in docs]
     assert collection_docs['metadatas'] == [{}, {}, {}]
-    assert collection_docs['ids'] == ['0', '1', '2']
+    assert len(collection_docs['ids']) == len(docs)
     assert len(collection_docs['embeddings']) == len(docs)
+
+    results = doc_index.search(doc=docs[0], n_results=1)
+    assert 'distance' in results[0].metadata
+
+    # test adding same documents
+    new_docs = [
+        Document(content='New Doc 1', metadata={'id': 0}),
+        Document(content='New Doc 2', metadata={'id': 1}),
+    ]
+    doc_index.add(docs=docs + new_docs)
+    collection_docs = doc_index._collection.get(include = ['documents', 'metadatas', 'embeddings'])
+    assert collection_docs['documents'] == [x.content for x in docs + new_docs]
+    assert collection_docs['metadatas'] == [{}, {}, {}, {'id': 0}, {'id': 1}]
+    assert len(collection_docs['ids']) == len(docs + new_docs)
+    assert len(collection_docs['embeddings']) == len(docs + new_docs)
 
     results = doc_index.search(doc=docs[0], n_results=1)
     assert 'distance' in results[0].metadata

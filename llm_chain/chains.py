@@ -6,6 +6,19 @@ import inspect
 from llm_chain.base import MessageRecord, Record, UsageRecord
 
 
+class Value:
+    """TODO."""
+
+    def __init__(self):
+        self.value = None
+
+    def __call__(self, value: object | None = None) -> object:
+        """TODO."""
+        if value:
+            self.value = value
+        return self.value
+
+
 class Chain:
     """TODO."""
 

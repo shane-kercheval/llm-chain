@@ -2,7 +2,7 @@
 from time import sleep
 import re
 import pytest
-from llm_chain.utilities import Timer
+from llm_chain.utilities import Timer, create_hash
 
 def test_timer_seconds():  # noqa
     with Timer() as timer:
@@ -14,3 +14,13 @@ def test_timer_seconds():  # noqa
 
     with pytest.raises(ValueError):  # noqa
         timer.formatted(units='days')
+
+
+def test_create_hash():  # noqa
+    value_a = create_hash('Test value 1')
+    assert value_a
+    value_b = create_hash('Test value 2')
+    assert value_b
+    assert value_a != value_b
+    value_c = create_hash('Test value 1')
+    assert value_c == value_a

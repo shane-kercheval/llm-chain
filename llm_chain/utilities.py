@@ -1,5 +1,6 @@
 
 """Helper functions and classes."""
+import hashlib
 import datetime
 
 
@@ -33,3 +34,13 @@ class Timer:
             return f"{self.interval.total_seconds():.{decimal_places}f} seconds"
 
         raise ValueError("Only suppports seconds.")
+
+
+def create_hash(string_value: str) -> str:
+    """TODO."""
+    # Create a new SHA-256 hash object
+    hash_object = hashlib.sha256()
+    # Convert the string value to bytes and update the hash object
+    hash_object.update(string_value.encode('utf-8'))
+    # Get the hexadecimal representation of the hash
+    return hash_object.hexdigest()
