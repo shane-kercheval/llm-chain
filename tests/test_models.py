@@ -1,5 +1,5 @@
 """tests llm_chain/models.py."""
-from llm_chain.base import Document, EmbeddingsRecord, MessageRecord
+from llm_chain.base import Document, EmbeddingsRecord, MessageRecord, StreamingRecord
 from llm_chain.models import OpenAIChat, OpenAIEmbeddings
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 from tests.conftest import MockChat, MockRandomEmbeddings
@@ -256,6 +256,139 @@ def test_OpenAIChat():  # noqa
     assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
     assert openai_llm.total_prompt_tokens == previous_prompt_tokens + message.prompt_tokens
     assert openai_llm.total_response_tokens == previous_response_tokens + message.response_tokens
+
+def test_OpenAIChat_streaming():  # noqa
+    """Test the same thing as above but for streaming. All usage and history should be the same."""
+    callback_response = ''
+    def streaming_callback(record: StreamingRecord) -> None:
+        nonlocal callback_response
+        callback_response += record.response
+
+    model_name = 'gpt-3.5-turbo'
+    openai_llm = OpenAIChat(model_name=model_name, streaming_callback=streaming_callback)
+    assert openai_llm.previous_message is None
+    assert openai_llm.previous_prompt is None
+    assert openai_llm.previous_response is None
+    assert openai_llm.total_cost is None
+    assert openai_llm.total_tokens is None
+    assert openai_llm.total_prompt_tokens is None
+    assert openai_llm.total_response_tokens is None
+
+    ####
+    # first interaction
+    ####
+    prompt = "This is a question."
+    response = openai_llm(prompt)
+    assert isinstance(response, str)
+    assert len(response) > 1
+    assert response == callback_response
+
+    # previous memory is the input to ChatGPT
+    assert openai_llm._previous_memory[0]['role'] == 'system'
+    assert openai_llm._previous_memory[0]['content'] == 'You are a helpful assistant.'
+    assert openai_llm._previous_memory[-1]['role'] == 'user'
+    assert openai_llm._previous_memory[-1]['content'] == prompt
+
+    assert len(openai_llm._history) == 1
+    message = openai_llm.previous_message
+    assert isinstance(message, MessageRecord)
+    assert message.prompt == prompt
+    assert message.response == response
+    assert message.metadata == {'model_name': model_name}
+    assert message.cost > 0
+    assert message.prompt_tokens > 0
+    assert message.response_tokens > 0
+    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.uuid
+    assert message.timestamp
+
+    assert openai_llm.previous_prompt == prompt
+    assert openai_llm.previous_response == response
+    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
+    assert openai_llm.total_cost == message.cost
+    assert openai_llm.total_tokens == message.total_tokens
+    assert openai_llm.total_prompt_tokens == message.prompt_tokens
+    assert openai_llm.total_response_tokens == message.response_tokens
+
+    previous_prompt = prompt
+    previous_response = response
+    previous_cost = message.cost
+    previous_total_tokens = message.total_tokens
+    previous_prompt_tokens = message.prompt_tokens
+    previous_response_tokens = message.response_tokens
+    previous_message = message
+
+    ####
+    # second interaction
+    ####
+    callback_response = ''
+    prompt = "This is another question."
+    response = openai_llm(prompt)
+    assert isinstance(response, str)
+    assert len(response) > 1
+    assert response == callback_response
+
+    # previous memory is the input to ChatGPT
+    assert openai_llm._previous_memory[0]['role'] == 'system'
+    assert openai_llm._previous_memory[1]['role'] == 'user'
+    assert openai_llm._previous_memory[1]['content'] == previous_prompt
+    assert openai_llm._previous_memory[2]['role'] == 'assistant'
+    assert openai_llm._previous_memory[2]['content'] == previous_response
+    assert openai_llm._previous_memory[3]['role'] == 'user'
+    assert openai_llm._previous_memory[3]['content'] == prompt
+
+    assert len(openai_llm._history) == 2
+    message = openai_llm.previous_message
+    assert isinstance(message, MessageRecord)
+    assert message.prompt == prompt
+    assert message.response == response
+    assert message.metadata == {'model_name': model_name}
+    assert message.cost > 0
+    assert message.prompt_tokens > 0
+    assert message.response_tokens > 0
+    assert message.total_tokens == message.prompt_tokens + message.response_tokens
+    assert message.uuid
+    assert message.uuid != previous_message.uuid
+    assert message.timestamp
+
+    assert openai_llm.previous_prompt == prompt
+    assert openai_llm.previous_response == response
+    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
+    assert openai_llm.total_cost == previous_cost + message.cost
+    assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
+    assert openai_llm.total_prompt_tokens == previous_prompt_tokens + message.prompt_tokens
+    assert openai_llm.total_response_tokens == previous_response_tokens + message.response_tokens
+
+def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
+    """
+    Test that we get the same final response and usage data when streaming vs not streaming.
+    Additionally test that the response we get in the streaming callback matches the overall
+    response.
+    """
+    question = "Explain what a large language model is in a single sentence."
+    model_name = 'gpt-3.5-turbo'
+    non_streaming_chat = OpenAIChat(
+        model_name=model_name,
+        temperature=0,
+        )
+    non_streaming_response = non_streaming_chat(question)
+
+    callback_response = ''
+    def streaming_callback(record: StreamingRecord) -> None:
+        nonlocal callback_response
+        callback_response += record.response
+
+    streaming_chat = OpenAIChat(
+        model_name=model_name,
+        temperature=0,
+        streaming_callback=streaming_callback,
+    )
+    streaming_response  = streaming_chat(question)
+    assert non_streaming_response == streaming_response
+    assert non_streaming_response == callback_response
+    assert non_streaming_chat.total_prompt_tokens == streaming_chat.total_prompt_tokens
+    assert non_streaming_chat.total_response_tokens == streaming_chat.total_response_tokens
+    assert non_streaming_chat.total_tokens == streaming_chat.total_tokens
 
 def test_EmbeddingsModel__no_costs():  # noqa
     model = MockRandomEmbeddings(token_counter=len, cost_per_token=None)

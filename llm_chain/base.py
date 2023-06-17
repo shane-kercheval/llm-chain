@@ -18,6 +18,12 @@ class Record(BaseModel):
         return f"timestamp: {self.timestamp}; metadata: {self.metadata}"
 
 
+class StreamingRecord(Record):
+    """TODO."""
+
+    response: str
+
+
 class UsageRecord(Record):
     """TODO."""
 

@@ -9,10 +9,7 @@ from dotenv import load_dotenv
 from llm_chain.base import ChatModel, Document, EmbeddingsRecord, EmbeddingsModel, \
     MessageRecord
 
-
-@pytest.fixture(scope="session", autouse=True)
-def load_env_vars():  # noqa
-    load_dotenv()
+load_dotenv()
 
 
 class MockChat(ChatModel):
