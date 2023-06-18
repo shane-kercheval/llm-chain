@@ -3,6 +3,8 @@
 import hashlib
 import datetime
 from functools import cache
+from collections.abc import Callable
+import tenacity
 import tiktoken
 from tiktoken import Encoding
 
@@ -91,3 +93,23 @@ def num_tokens_from_messages(model_name: str, messages: list[dict]) -> int:
                 num_tokens += tokens_per_name
     num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
     return num_tokens
+
+
+def retry_handler(num_retries: int = 3, wait_fixed: int = 1) -> Callable:
+    """
+    Returns a tenacity callable object that can be used for retrying a function call.
+
+    ```
+    r = retry_handler()
+    r(
+        openai.Completion.create,
+        model="text-davinci-003",
+        prompt="Once upon a time,"
+    )
+    ```
+    """
+    return tenacity.Retrying(
+        stop=tenacity.stop_after_attempt(num_retries),
+        wait=tenacity.wait_fixed(wait_fixed),
+        reraise=True,
+    )

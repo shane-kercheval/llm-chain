@@ -3,7 +3,7 @@ from collections.abc import Callable
 from llm_chain.base import ChatModel, Document, EmbeddingsRecord, EmbeddingsModel, MemoryBuffer, \
     MessageRecord, StreamingRecord
 from llm_chain.resources import MODEL_COST_PER_TOKEN
-from llm_chain.utilities import num_tokens, num_tokens_from_messages
+from llm_chain.utilities import num_tokens, num_tokens_from_messages, retry_handler
 
 
 class OpenAIEmbeddings(EmbeddingsModel):
@@ -40,7 +40,8 @@ class OpenAIEmbeddings(EmbeddingsModel):
         """TODO."""
         import openai
         texts = [self.doc_prep(x.content) for x in docs]
-        response = openai.Embedding.create(
+        response = retry_handler()(
+            openai.Embedding.create,
             input = texts,
             model=self.model_name,
             timeout=self.timeout,
@@ -111,7 +112,8 @@ class OpenAIChat(ChatModel):
         # add latest prompt to messages
         messages += [{'role': 'user', 'content': prompt}]
         if self._streaming_callback:
-            response = openai.ChatCompletion.create(
+            response = retry_handler()(
+                openai.ChatCompletion.create,
                 model=self.model_name,
                 messages=messages,
                 temperature=self.temperature,
@@ -135,7 +137,8 @@ class OpenAIChat(ChatModel):
             completion_tokens = num_tokens(model_name=self.model_name, value=response_message)
             total_tokens = prompt_tokens + completion_tokens
         else:
-            response = openai.ChatCompletion.create(
+            response = retry_handler()(
+                openai.ChatCompletion.create,
                 model=self.model_name,
                 messages=messages,
                 temperature=self.temperature,

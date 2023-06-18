@@ -3,7 +3,8 @@ from time import sleep
 import re
 import pytest
 import openai
-from llm_chain.utilities import Timer, create_hash, num_tokens, num_tokens_from_messages
+from llm_chain.utilities import Timer, create_hash, num_tokens, num_tokens_from_messages, \
+    retry_handler
 
 def test_timer_seconds():  # noqa
     with Timer() as timer:
@@ -73,3 +74,12 @@ def test_num_tokens_from_messages():  # noqa
     expected_value = response["usage"]["prompt_tokens"]
     actual_value = num_tokens_from_messages(model_name=model_name, messages=example_messages)
     assert expected_value == actual_value
+
+def test_retry_handler():  # noqa
+    r = retry_handler()
+    actual_value = r(
+        lambda x, y: (x, y),
+        x='A',
+        y='B',
+    )
+    assert actual_value == ('A', 'B')
