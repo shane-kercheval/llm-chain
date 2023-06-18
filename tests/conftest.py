@@ -69,7 +69,8 @@ class MockRandomEmbeddings(EmbeddingsModel):
         self.cost_per_token = cost_per_token
 
     def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsRecord]:
-        embeddings = [np.random.rand(5).tolist() for _ in docs]
+        rng = np.random.default_rng()
+        embeddings = [rng.uniform(low=-2, high=2, size=(50)).tolist() for _ in docs]
         total_tokens = sum(self.token_counter(x.content) for x in docs) \
             if self.token_counter else None
         cost = total_tokens * self.cost_per_token if self.cost_per_token else None
@@ -88,6 +89,7 @@ def fake_docs_abcd() -> list[Document]:
         Document(content="Doc C", metadata={'id': 3}),
         Document(content="Doc D", metadata={'id': 4}),
     ]
+
 
 class MockABCDEmbeddings(EmbeddingsModel):
     """

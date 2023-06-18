@@ -68,7 +68,7 @@ class OpenAIChat(ChatModel):
             max_tokens: int = 2000,
             system_message: str = 'You are a helpful assistant.',
             streaming_callback: Callable[[None], StreamingRecord] | None = None,
-            memory_strategy: MemoryBuffer | None = None,  # noqa
+            memory_strategy: MemoryBuffer | None = None,
             timeout: int = 10,
             ) -> None:
         """TODO."""
