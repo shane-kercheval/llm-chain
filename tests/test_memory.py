@@ -1,13 +1,15 @@
 """tests llm_chain/memory.py."""
 
-from llm_chain.base import MessageMetaData
+from llm_chain.base import MessageRecord
 from llm_chain.memory import MemoryBufferMessageWindow
 from llm_chain.models import OpenAIChat
+from llm_chain.resources import MODEL_COST_PER_TOKEN
 
 
 def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
+    model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(
-        model_name='gpt-3.5-turbo',
+        model_name=model_name,
         memory_strategy=MemoryBufferMessageWindow(last_n_messages=0),
     )
     assert openai_llm.previous_message is None
@@ -33,12 +35,12 @@ def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
 
-    assert len(openai_llm.history) == 1
+    assert len(openai_llm._history) == 1
     message = openai_llm.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': 'gpt-3.5-turbo'}
+    assert message.metadata == {'model_name': model_name}
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -46,7 +48,7 @@ def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == 0.002 / 1000
+    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert openai_llm.total_cost == message.cost
     assert openai_llm.total_tokens == message.total_tokens
     assert openai_llm.total_prompt_tokens == message.prompt_tokens
@@ -76,12 +78,12 @@ def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
     assert openai_llm._previous_memory[1]['role'] == 'user'
     assert openai_llm._previous_memory[1]['content'] == prompt
 
-    assert len(openai_llm.history) == 2
+    assert len(openai_llm._history) == 2
     message = openai_llm.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': 'gpt-3.5-turbo'}
+    assert message.metadata == {'model_name': model_name}
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -89,15 +91,16 @@ def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == 0.002 / 1000
+    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert openai_llm.total_cost == previous_cost + message.cost
     assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
     assert openai_llm.total_prompt_tokens == previous_prompt_tokens + message.prompt_tokens
     assert openai_llm.total_response_tokens == previous_response_tokens + message.response_tokens
 
 def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
+    model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(
-        model_name='gpt-3.5-turbo',
+        model_name=model_name,
         memory_strategy=MemoryBufferMessageWindow(last_n_messages=1),
     )
     assert openai_llm.previous_message is None
@@ -123,12 +126,12 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
 
-    assert len(openai_llm.history) == 1
+    assert len(openai_llm._history) == 1
     message = openai_llm.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': 'gpt-3.5-turbo'}
+    assert message.metadata == {'model_name': model_name}
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -136,7 +139,7 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == 0.002 / 1000
+    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert openai_llm.total_cost == message.cost
     assert openai_llm.total_tokens == message.total_tokens
     assert openai_llm.total_prompt_tokens == message.prompt_tokens
@@ -169,12 +172,12 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
     assert openai_llm._previous_memory[3]['role'] == 'user'
     assert openai_llm._previous_memory[3]['content'] == prompt
 
-    assert len(openai_llm.history) == 2
+    assert len(openai_llm._history) == 2
     message = openai_llm.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': 'gpt-3.5-turbo'}
+    assert message.metadata == {'model_name': model_name}
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -182,7 +185,7 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == 0.002 / 1000
+    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
     assert openai_llm.total_cost == previous_cost + message.cost
     assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
     assert openai_llm.total_prompt_tokens == previous_prompt_tokens + message.prompt_tokens
@@ -214,12 +217,12 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
     assert openai_llm._previous_memory[3]['content'] == prompt
     assert len(openai_llm._previous_memory) == 4
 
-    assert len(openai_llm.history) == 3
+    assert len(openai_llm._history) == 3
     message = openai_llm.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': 'gpt-3.5-turbo'}
+    assert message.metadata == {'model_name': model_name}
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -227,7 +230,7 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == 0.002 / 1000
+    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
 
     previous_prompt = prompt
     previous_response = response
@@ -255,12 +258,12 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
     # (1)system + (2)previous question + (3)previous answer + (4)new question
     assert len(openai_llm._previous_memory) == 4
 
-    assert len(openai_llm.history) == 4
+    assert len(openai_llm._history) == 4
     message = openai_llm.previous_message
-    assert isinstance(message, MessageMetaData)
+    assert isinstance(message, MessageRecord)
     assert message.prompt == prompt
     assert message.response == response
-    assert message.metadata == {'model_name': 'gpt-3.5-turbo'}
+    assert message.metadata == {'model_name': model_name}
     assert message.cost > 0
     assert message.prompt_tokens > 0
     assert message.response_tokens > 0
@@ -268,6 +271,6 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
 
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
-    assert openai_llm.cost_per_token == 0.002 / 1000
+    assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
 
 # TODO: test MemoryBufferTokenWindow

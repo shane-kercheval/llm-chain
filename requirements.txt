@@ -1,3 +1,4 @@
+beautifulsoup4
 chromadb
 coverage
 duckduckgo-search
@@ -10,4 +11,5 @@ pytest
 python-dotenv
 PyYAML
 ruff
+tenacity
 tiktoken

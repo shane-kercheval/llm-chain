@@ -6,8 +6,10 @@ import numpy as np
 import pytest
 from dotenv import load_dotenv
 
-from llm_chain.base import ChatModel, Document, EmbeddingsMetaData, EmbeddingsModel, \
-    MessageMetaData
+from llm_chain.base import ChatModel, Document, EmbeddingsRecord, EmbeddingsModel, \
+    MessageRecord
+
+load_dotenv()
 
 
 class MockChat(ChatModel):
@@ -34,7 +36,7 @@ class MockChat(ChatModel):
         self.cost_per_token = cost_per_token
         self.return_prompt = return_prompt
 
-    def _run(self, prompt: str) -> MessageMetaData:
+    def _run(self, prompt: str) -> MessageRecord:
         if self.return_prompt:
             response = self.return_prompt + prompt
         else:
@@ -44,7 +46,7 @@ class MockChat(ChatModel):
         response_tokens = self.token_counter(response) if self.token_counter else None
         total_tokens = prompt_tokens + response_tokens if self.token_counter else None
         cost = total_tokens * self.cost_per_token if self.cost_per_token else None
-        return MessageMetaData(
+        return MessageRecord(
             prompt=prompt,
             response=response,
             total_tokens=total_tokens,
@@ -55,29 +57,62 @@ class MockChat(ChatModel):
         )
 
 
-class MockEmbeddings(EmbeddingsModel):
+class MockRandomEmbeddings(EmbeddingsModel):
     """Used for unit tests to mock the behavior of an LLM."""
 
     def __init__(
             self,
-            token_counter: Callable[[str], int] | None = None,
+            token_counter: Callable[[str], int],
             cost_per_token: float | None = None) -> None:
         super().__init__()
         self.token_counter = token_counter
         self.cost_per_token = cost_per_token
 
-    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsMetaData]:
-        response = [np.random.rand(5) for _ in docs]
-        for doc, embedding in zip(docs, response):
-            doc.embedding = embedding
+    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsRecord]:
+        rng = np.random.default_rng()
+        embeddings = [rng.uniform(low=-2, high=2, size=(50)).tolist() for _ in docs]
         total_tokens = sum(self.token_counter(x.content) for x in docs) \
             if self.token_counter else None
         cost = total_tokens * self.cost_per_token if self.cost_per_token else None
-        return docs, EmbeddingsMetaData(
+        return embeddings, EmbeddingsRecord(
             total_tokens=total_tokens,
             cost=cost,
         )
 
-@pytest.fixture(scope="session", autouse=True)
-def load_env_vars():  # noqa
-    load_dotenv()
+
+@pytest.fixture()
+def fake_docs_abcd() -> list[Document]:
+    """Meant to be used MockABCDEmbeddings model."""
+    return [
+        Document(content="Doc A", metadata={'id': 0}),
+        Document(content="Doc B", metadata={'id': 1}),
+        Document(content="Doc C", metadata={'id': 3}),
+        Document(content="Doc D", metadata={'id': 4}),
+    ]
+
+
+class MockABCDEmbeddings(EmbeddingsModel):
+    """
+    Used for unit tests to mock the behavior of an LLM.
+
+    Used in conjunction with a specific document list `fake_docs_abcd`.
+    """
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.cost_per_token = 7
+        self.lookup = {
+            0: [0.5, 0.5, 0.5, 0.5, 0.5],
+            1: [1, 1, 1, 1, 1],
+            3: [3, 3, 3, 3, 3],
+            4: [4, 4, 4, 4, 4],
+        }
+
+    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsRecord]:
+        embeddings = [self.lookup[x.metadata['id']] for x in docs]
+        total_tokens = sum(len(x.content) for x in docs)
+        cost = total_tokens * self.cost_per_token
+        return embeddings, EmbeddingsRecord(
+            total_tokens=total_tokens,
+            cost=cost,
+        )

@@ -9,22 +9,6 @@ Simple and extensible LLM Chaining (pre-alpha)
 
 ---
 
-## TODO
-
-- implement vectordb store
-- implement DocumentPrompt (stuff docs + query)
-- test MemoryBufferTokenWindow
-- implement streaming
-    - issue with tracking tokens/cost
-    - https://community.openai.com/t/openai-api-get-usage-tokens-in-response-when-set-stream-true/141866
-- implement PDFLoadder
-- implement DuckDuckGo search
-- implement async
-- implement retry
-
----
-
-
 ## Installing
 
 ```commandline
