@@ -15,7 +15,7 @@ class Record(BaseModel):
     timestamp: str = Field(
         default_factory=lambda: datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3],
     )
-    metadata: dict = {}
+    metadata: dict = Field(default_factory=dict)
 
     def __str__(self) -> str:
         return f"timestamp: {self.timestamp}; metadata: {self.metadata}"
