@@ -1,6 +1,6 @@
 """TODO."""
 from itertools import islice
-from llm_chain.base import Document
+from llm_chain.base import Document, HistoricalData, Record
 
 
 def split_documents(docs: list[Document], max_chunk_size: int = 500) -> list[Document]:
@@ -41,11 +41,33 @@ def html_page_loader(url: str) -> str:
     return soup.get_text().strip()
 
 
-def duckduckgo_search(query: str, top_n: int = 3) -> list[dict]:
+class SearchRecord(Record):
     """TODO."""
-    from duckduckgo_search import DDGS
-    with DDGS() as ddgs:
-        ddgs_generator = ddgs.text(query, region='wt-wt', safesearch='Off', timelimit='y')
-        return list(islice(ddgs_generator, top_n))
+
+    query: str
+    results: list[dict]
 
 
+class DuckDuckGoSearch(HistoricalData):
+    """TODO."""
+
+    def __init__(self, top_n: int = 3):
+        self.top_n = top_n
+        self._history = []
+
+    def __call__(self, query: str) -> list[dict]:
+        """TODO."""
+        from duckduckgo_search import DDGS
+        with DDGS() as ddgs:
+            ddgs_generator = ddgs.text(query, region='wt-wt', safesearch='Off', timelimit='y')
+            results = list(islice(ddgs_generator, self.top_n))
+        self._history.append(SearchRecord(
+            query=query,
+            results=results,
+        ))
+        return results
+
+    @property
+    def history(self) -> list[SearchRecord]:
+        """TODO."""
+        return self._history

@@ -1,7 +1,7 @@
 """TODO."""
 from time import sleep
-from llm_chain.base import Document, HistoricalUsageRecords, MessageRecord, Record, UsageRecord
-from llm_chain.chains import Chain, _has_property, Value
+from llm_chain.base import Document, HistoricalUsageRecords, MessageRecord, Record, UsageRecord, \
+    Chain, _has_property, Value
 from tests.conftest import MockChat, MockRandomEmbeddings
 
 
