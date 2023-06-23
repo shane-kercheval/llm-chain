@@ -27,7 +27,7 @@ class MockChat(ChatModel):
             token_counter:
                 custom token counter to check total_tokens
             cost_per_token:
-                custom costs to check total_costs
+                custom costs to check costs
             return_prompt:
                 if not None, prepends the string to the prompt and returns it as a response
         """

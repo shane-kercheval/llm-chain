@@ -97,7 +97,7 @@ class HistoricalUsageRecords(HistoricalData):
         return None
 
     @property
-    def total_cost(self) -> str:
+    def cost(self) -> str:
         """TODO."""
         if self.history and self.history[0].cost is not None:
             return sum(x.cost for x in self.history)
@@ -204,7 +204,7 @@ class ChatModel(LargeLanguageModel):
         return None
 
     @property
-    def total_prompt_tokens(self) -> str:
+    def prompt_tokens(self) -> str:
         """
         Returns the total number of prompt_tokens used by the model during this object's lifetime.
 
@@ -216,7 +216,7 @@ class ChatModel(LargeLanguageModel):
         return None
 
     @property
-    def total_response_tokens(self) -> str:
+    def response_tokens(self) -> str:
         """
         Returns the total number of response_tokens used by the model during this object's
         lifetime.
@@ -366,7 +366,7 @@ class Chain:
         return sum(totals)
 
     @property
-    def total_cost(self) -> str:
+    def cost(self) -> str:
         """
         Returns the total number of cost used by the all models during the chain/object's
         lifetime.

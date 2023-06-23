@@ -38,22 +38,22 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     collection = client.create_collection("test")
     chroma_db = ChromaDocumentIndex(collection=collection, embeddings_model=embeddings_model)
     assert chroma_db.total_tokens is None
-    assert chroma_db.total_cost is None
+    assert chroma_db.cost is None
     chroma_db.add(docs=None)
     assert chroma_db.total_tokens is None
-    assert chroma_db.total_cost is None
+    assert chroma_db.cost is None
     chroma_db.add(docs=[])
     assert chroma_db.total_tokens is None
-    assert chroma_db.total_cost is None
+    assert chroma_db.cost is None
 
     chroma_db.add(docs=fake_docs_abcd)
     initial_expected_tokens = len("Doc X") * len(fake_docs_abcd)
     initial_expected_cost = initial_expected_tokens * embeddings_model.cost_per_token
     # test that usage reflects underlying usage in embeddings
     assert chroma_db.total_tokens == initial_expected_tokens
-    assert chroma_db.total_cost == initial_expected_cost
+    assert chroma_db.cost == initial_expected_cost
     assert chroma_db.total_tokens == embeddings_model.total_tokens
-    assert chroma_db.total_cost == embeddings_model.total_cost
+    assert chroma_db.cost == embeddings_model.cost
     assert len(embeddings_model._history) == 1
     assert embeddings_model._history[0].total_tokens == initial_expected_tokens
     assert embeddings_model._history[0].cost == initial_expected_cost
@@ -85,9 +85,9 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     new_expected_cost = new_expected_tokens * embeddings_model.cost_per_token
     # test that usage reflects underlying usage in embeddings
     assert chroma_db.total_tokens == new_expected_tokens
-    assert chroma_db.total_cost == new_expected_cost
+    assert chroma_db.cost == new_expected_cost
     assert chroma_db.total_tokens == embeddings_model.total_tokens
-    assert chroma_db.total_cost == embeddings_model.total_cost
+    assert chroma_db.cost == embeddings_model.cost
     assert len(embeddings_model._history) == 2
     assert embeddings_model._history[0].total_tokens == initial_expected_tokens
     assert embeddings_model._history[0].cost == initial_expected_cost
@@ -106,9 +106,9 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     new_expected_cost = new_expected_tokens * embeddings_model.cost_per_token
     # test that usage reflects underlying usage in embeddings
     assert chroma_db.total_tokens == new_expected_tokens
-    assert chroma_db.total_cost == new_expected_cost
+    assert chroma_db.cost == new_expected_cost
     assert chroma_db.total_tokens == embeddings_model.total_tokens
-    assert chroma_db.total_cost == embeddings_model.total_cost
+    assert chroma_db.cost == embeddings_model.cost
     assert len(embeddings_model._history) == 3
     assert embeddings_model._history[0].total_tokens == initial_expected_tokens
     assert embeddings_model._history[0].cost == initial_expected_cost

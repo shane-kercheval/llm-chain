@@ -10,10 +10,10 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert model.previous_message is None
     assert model.previous_prompt is None
     assert model.previous_response is None
-    assert model.total_cost is None
+    assert model.cost is None
     assert model.total_tokens is None
-    assert model.total_prompt_tokens is None
-    assert model.total_response_tokens is None
+    assert model.prompt_tokens is None
+    assert model.response_tokens is None
 
     ####
     # first interaction
@@ -40,10 +40,10 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert model.previous_response == response
     assert model.cost_per_token is None
     assert model.token_counter is None
-    assert model.total_cost is None
+    assert model.cost is None
     assert model.total_tokens is None
-    assert model.total_prompt_tokens is None
-    assert model.total_response_tokens is None
+    assert model.prompt_tokens is None
+    assert model.response_tokens is None
 
     ####
     # second interaction
@@ -72,10 +72,10 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert model.previous_response == response
     assert model.cost_per_token is None
     assert model.token_counter is None
-    assert model.total_cost is None
+    assert model.cost is None
     assert model.total_tokens is None
-    assert model.total_prompt_tokens is None
-    assert model.total_response_tokens is None
+    assert model.prompt_tokens is None
+    assert model.response_tokens is None
 
 def test_ChatModel__has_token_counter_and_costs():  # noqa
     token_counter = len
@@ -84,10 +84,10 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     assert model.previous_message is None
     assert model.previous_prompt is None
     assert model.previous_response is None
-    assert model.total_cost is None
+    assert model.cost is None
     assert model.total_tokens is None
-    assert model.total_prompt_tokens is None
-    assert model.total_response_tokens is None
+    assert model.prompt_tokens is None
+    assert model.response_tokens is None
 
     ####
     # first interaction
@@ -118,10 +118,10 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     assert model.previous_response == response
     assert model.token_counter is token_counter
     assert model.cost_per_token == cost_per_token
-    assert model.total_cost == expected_costs
+    assert model.cost == expected_costs
     assert model.total_tokens == expected_tokens
-    assert model.total_prompt_tokens == expected_prompt_tokens
-    assert model.total_response_tokens == expected_response_tokens
+    assert model.prompt_tokens == expected_prompt_tokens
+    assert model.response_tokens == expected_response_tokens
 
     previous_tokens = expected_tokens
     previous_prompt_tokens = expected_prompt_tokens
@@ -159,10 +159,10 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     assert model.previous_response == response
     assert model.token_counter is token_counter
     assert model.cost_per_token == cost_per_token
-    assert model.total_cost == expected_costs + previous_costs
+    assert model.cost == expected_costs + previous_costs
     assert model.total_tokens == expected_tokens + previous_tokens
-    assert model.total_prompt_tokens == expected_prompt_tokens + previous_prompt_tokens
-    assert model.total_response_tokens == expected_response_tokens + previous_response_tokens
+    assert model.prompt_tokens == expected_prompt_tokens + previous_prompt_tokens
+    assert model.response_tokens == expected_response_tokens + previous_response_tokens
 
 def test_OpenAIChat():  # noqa
     model_name = 'gpt-3.5-turbo'
@@ -170,10 +170,10 @@ def test_OpenAIChat():  # noqa
     assert openai_llm.previous_message is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
-    assert openai_llm.total_cost is None
+    assert openai_llm.cost is None
     assert openai_llm.total_tokens is None
-    assert openai_llm.total_prompt_tokens is None
-    assert openai_llm.total_response_tokens is None
+    assert openai_llm.prompt_tokens is None
+    assert openai_llm.response_tokens is None
 
     ####
     # first interaction
@@ -205,10 +205,10 @@ def test_OpenAIChat():  # noqa
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.total_cost == message.cost
+    assert openai_llm.cost == message.cost
     assert openai_llm.total_tokens == message.total_tokens
-    assert openai_llm.total_prompt_tokens == message.prompt_tokens
-    assert openai_llm.total_response_tokens == message.response_tokens
+    assert openai_llm.prompt_tokens == message.prompt_tokens
+    assert openai_llm.response_tokens == message.response_tokens
 
     previous_prompt = prompt
     previous_response = response
@@ -252,10 +252,10 @@ def test_OpenAIChat():  # noqa
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.total_cost == previous_cost + message.cost
+    assert openai_llm.cost == previous_cost + message.cost
     assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
-    assert openai_llm.total_prompt_tokens == previous_prompt_tokens + message.prompt_tokens
-    assert openai_llm.total_response_tokens == previous_response_tokens + message.response_tokens
+    assert openai_llm.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
+    assert openai_llm.response_tokens == previous_response_tokens + message.response_tokens
 
 def test_OpenAIChat_streaming():  # noqa
     """Test the same thing as above but for streaming. All usage and history should be the same."""
@@ -269,10 +269,10 @@ def test_OpenAIChat_streaming():  # noqa
     assert openai_llm.previous_message is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
-    assert openai_llm.total_cost is None
+    assert openai_llm.cost is None
     assert openai_llm.total_tokens is None
-    assert openai_llm.total_prompt_tokens is None
-    assert openai_llm.total_response_tokens is None
+    assert openai_llm.prompt_tokens is None
+    assert openai_llm.response_tokens is None
 
     ####
     # first interaction
@@ -305,10 +305,10 @@ def test_OpenAIChat_streaming():  # noqa
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.total_cost == message.cost
+    assert openai_llm.cost == message.cost
     assert openai_llm.total_tokens == message.total_tokens
-    assert openai_llm.total_prompt_tokens == message.prompt_tokens
-    assert openai_llm.total_response_tokens == message.response_tokens
+    assert openai_llm.prompt_tokens == message.prompt_tokens
+    assert openai_llm.response_tokens == message.response_tokens
 
     previous_prompt = prompt
     previous_response = response
@@ -354,10 +354,10 @@ def test_OpenAIChat_streaming():  # noqa
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.total_cost == previous_cost + message.cost
+    assert openai_llm.cost == previous_cost + message.cost
     assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
-    assert openai_llm.total_prompt_tokens == previous_prompt_tokens + message.prompt_tokens
-    assert openai_llm.total_response_tokens == previous_response_tokens + message.response_tokens
+    assert openai_llm.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
+    assert openai_llm.response_tokens == previous_response_tokens + message.response_tokens
 
 def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
     """
@@ -386,13 +386,13 @@ def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
     streaming_response  = streaming_chat(question)
     assert non_streaming_response == streaming_response
     assert non_streaming_response == callback_response
-    assert non_streaming_chat.total_prompt_tokens == streaming_chat.total_prompt_tokens
-    assert non_streaming_chat.total_response_tokens == streaming_chat.total_response_tokens
+    assert non_streaming_chat.prompt_tokens == streaming_chat.prompt_tokens
+    assert non_streaming_chat.response_tokens == streaming_chat.response_tokens
     assert non_streaming_chat.total_tokens == streaming_chat.total_tokens
 
 def test_EmbeddingsModel__no_costs():  # noqa
     model = MockRandomEmbeddings(token_counter=len, cost_per_token=None)
-    assert model.total_cost is None
+    assert model.cost is None
     assert model.total_tokens is None
 
     ####
@@ -422,7 +422,7 @@ def test_EmbeddingsModel__no_costs():  # noqa
     assert first_record.timestamp
 
     assert model.total_tokens == expected_tokens
-    assert model.total_cost is None
+    assert model.cost is None
 
     previous_tokens = model.total_tokens
     previous_record = first_record
@@ -463,12 +463,12 @@ def test_EmbeddingsModel__no_costs():  # noqa
     assert second_record.timestamp
 
     assert model.total_tokens == previous_tokens + expected_tokens
-    assert model.total_cost is None
+    assert model.cost is None
 
 def test_EmbeddingsModel__with_costs():  # noqa
     cost_per_token = 3
     model = MockRandomEmbeddings(token_counter=len, cost_per_token=cost_per_token)
-    assert model.total_cost is None
+    assert model.cost is None
     assert model.total_tokens is None
 
     ####
@@ -500,10 +500,10 @@ def test_EmbeddingsModel__with_costs():  # noqa
     assert first_record.timestamp
 
     assert model.total_tokens == expected_tokens
-    assert model.total_cost == expected_cost
+    assert model.cost == expected_cost
 
     previous_tokens = model.total_tokens
-    previous_cost = model.total_cost
+    previous_cost = model.cost
     previous_record = first_record
 
     ####
@@ -544,11 +544,11 @@ def test_EmbeddingsModel__with_costs():  # noqa
     assert second_record.timestamp
 
     assert model.total_tokens == previous_tokens + expected_tokens
-    assert model.total_cost == previous_cost + expected_cost
+    assert model.cost == previous_cost + expected_cost
 
 def test_OpenAIEmbeddings():  # noqa
     model = OpenAIEmbeddings(model_name='text-embedding-ada-002')
-    assert model.total_cost is None
+    assert model.cost is None
     assert model.total_tokens is None
 
     ####
@@ -580,10 +580,10 @@ def test_OpenAIEmbeddings():  # noqa
     assert previous_record.metadata['model_name'] == 'text-embedding-ada-002'
 
     assert model.total_tokens == previous_record.total_tokens
-    assert model.total_cost == expected_cost
+    assert model.cost == expected_cost
 
     previous_tokens = model.total_tokens
-    previous_cost = model.total_cost
+    previous_cost = model.cost
 
     ####
     # second interaction
@@ -622,4 +622,4 @@ def test_OpenAIEmbeddings():  # noqa
     assert previous_record.metadata['model_name'] == 'text-embedding-ada-002'
 
     assert model.total_tokens == previous_tokens + previous_record.total_tokens
-    assert model.total_cost == previous_cost + expected_cost
+    assert model.cost == previous_cost + expected_cost

@@ -15,10 +15,10 @@ def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
     assert openai_llm.previous_message is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
-    assert openai_llm.total_cost is None
+    assert openai_llm.cost is None
     assert openai_llm.total_tokens is None
-    assert openai_llm.total_prompt_tokens is None
-    assert openai_llm.total_response_tokens is None
+    assert openai_llm.prompt_tokens is None
+    assert openai_llm.response_tokens is None
 
     ####
     # first interaction
@@ -49,10 +49,10 @@ def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.total_cost == message.cost
+    assert openai_llm.cost == message.cost
     assert openai_llm.total_tokens == message.total_tokens
-    assert openai_llm.total_prompt_tokens == message.prompt_tokens
-    assert openai_llm.total_response_tokens == message.response_tokens
+    assert openai_llm.prompt_tokens == message.prompt_tokens
+    assert openai_llm.response_tokens == message.response_tokens
 
     # previous_prompt = prompt
     # previous_response = response
@@ -92,10 +92,10 @@ def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.total_cost == previous_cost + message.cost
+    assert openai_llm.cost == previous_cost + message.cost
     assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
-    assert openai_llm.total_prompt_tokens == previous_prompt_tokens + message.prompt_tokens
-    assert openai_llm.total_response_tokens == previous_response_tokens + message.response_tokens
+    assert openai_llm.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
+    assert openai_llm.response_tokens == previous_response_tokens + message.response_tokens
 
 def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
     model_name = 'gpt-3.5-turbo'
@@ -106,10 +106,10 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
     assert openai_llm.previous_message is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
-    assert openai_llm.total_cost is None
+    assert openai_llm.cost is None
     assert openai_llm.total_tokens is None
-    assert openai_llm.total_prompt_tokens is None
-    assert openai_llm.total_response_tokens is None
+    assert openai_llm.prompt_tokens is None
+    assert openai_llm.response_tokens is None
 
     ####
     # first interaction
@@ -140,10 +140,10 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.total_cost == message.cost
+    assert openai_llm.cost == message.cost
     assert openai_llm.total_tokens == message.total_tokens
-    assert openai_llm.total_prompt_tokens == message.prompt_tokens
-    assert openai_llm.total_response_tokens == message.response_tokens
+    assert openai_llm.prompt_tokens == message.prompt_tokens
+    assert openai_llm.response_tokens == message.response_tokens
 
     previous_prompt = prompt
     previous_response = response
@@ -186,10 +186,10 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
     assert openai_llm.previous_prompt == prompt
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
-    assert openai_llm.total_cost == previous_cost + message.cost
+    assert openai_llm.cost == previous_cost + message.cost
     assert openai_llm.total_tokens == previous_total_tokens + message.total_tokens
-    assert openai_llm.total_prompt_tokens == previous_prompt_tokens + message.prompt_tokens
-    assert openai_llm.total_response_tokens == previous_response_tokens + message.response_tokens
+    assert openai_llm.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
+    assert openai_llm.response_tokens == previous_response_tokens + message.response_tokens
 
     previous_prompt = prompt
     previous_response = response

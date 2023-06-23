@@ -29,7 +29,7 @@ def test_DocSearchTemplate():  # noqa
     # the prompt template is propagating the costs from the embeddings model; in this case the
     # embeddings model added documents during this session/instantiatin
     assert prompt_template.total_tokens == expected_initial_tokens
-    assert prompt_template.total_cost == expected_initial_tokens * cost_per_token
+    assert prompt_template.cost == expected_initial_tokens * cost_per_token
 
     prompt = prompt_template(prompt=question)
     assert len(prompt) > 0
@@ -40,4 +40,4 @@ def test_DocSearchTemplate():  # noqa
     assert len(embeddings_model._history) == 2
 
     assert prompt_template.total_tokens == embeddings_model.total_tokens
-    assert prompt_template.total_cost == embeddings_model.total_cost
+    assert prompt_template.cost == embeddings_model.cost
