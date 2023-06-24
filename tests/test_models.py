@@ -421,7 +421,6 @@ def test_EmbeddingsModel__called_with_different_types():  # noqa
     assert result == expected_value
     assert embeddings.history[3].metadata == {'content': expected_value}
 
-
 def test_EmbeddingsModel__no_costs():  # noqa
     model = MockRandomEmbeddings(token_counter=len, cost_per_token=None)
     assert model.cost is None
