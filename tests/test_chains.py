@@ -144,7 +144,7 @@ def test_usage_history():  # noqa
     assert chain.total_tokens == mock_records.record_a.total_tokens + \
         mock_records.record_b.total_tokens + \
         mock_records.record_c.total_tokens
-    assert chain.total_cost == mock_records.record_a.cost + \
+    assert chain.cost == mock_records.record_a.cost + \
         mock_records.record_b.cost + \
         mock_records.record_c.cost
 
@@ -161,7 +161,7 @@ def test_usage_history_no_usage():  # noqa
     assert records[2] == mock_records.record_c
 
     assert chain.total_tokens is None
-    assert chain.total_cost is None
+    assert chain.cost is None
 
 def test_message_history():  # noqa
     mock_records = MockRecords()
@@ -177,7 +177,7 @@ def test_message_history():  # noqa
     assert chain.total_tokens == mock_records.record_a.total_tokens + \
         mock_records.record_b.total_tokens + \
         mock_records.record_c.total_tokens
-    assert chain.total_cost == mock_records.record_a.cost + \
+    assert chain.cost == mock_records.record_a.cost + \
         mock_records.record_b.cost + \
         mock_records.record_c.cost
 
@@ -208,13 +208,13 @@ def test_Chain_with_MockChat():  # noqa
     assert chat._history[1].total_tokens is None
     assert chat._history[1].cost is None
 
-    assert chat.total_prompt_tokens is None
-    assert chat.total_response_tokens is None
+    assert chat.prompt_tokens is None
+    assert chat.response_tokens is None
     assert chat.total_tokens is None
-    assert chat.total_cost is None
+    assert chat.cost is None
 
     assert chain.total_tokens is None
-    assert chain.total_cost is None
+    assert chain.cost is None
 
 def test_Chain_with_MockChat_tokens_costs():  # noqa
     prompt = "Here's a question."
@@ -249,15 +249,15 @@ def test_Chain_with_MockChat_tokens_costs():  # noqa
     assert chat._history[1].total_tokens == len(second_prompt) + len(second_response)
     assert chat._history[1].cost == chat._history[1].total_tokens * cost_per_token
 
-    assert chat.total_prompt_tokens == chat._history[0].prompt_tokens + chat._history[1].prompt_tokens  # noqa
-    assert chat.total_response_tokens == chat._history[0].response_tokens + chat._history[1].response_tokens  # noqa
+    assert chat.prompt_tokens == chat._history[0].prompt_tokens + chat._history[1].prompt_tokens  # noqa
+    assert chat.response_tokens == chat._history[0].response_tokens + chat._history[1].response_tokens  # noqa
     assert chat.total_tokens == chat._history[0].total_tokens + chat._history[1].total_tokens
-    assert chat.total_cost == chat._history[0].cost + chat._history[1].cost
+    assert chat.cost == chat._history[0].cost + chat._history[1].cost
 
     # because the `chat` model is included twice in the chain; this check ensures we are not
     # double-counting the totals
     assert chain.total_tokens == chat.total_tokens
-    assert chain.total_cost == chat.total_cost
+    assert chain.cost == chat.cost
 
     new_prompt = "New Prompt"
     result = chain(new_prompt)
@@ -293,11 +293,11 @@ def test_Chain_with_MockChat_tokens_costs():  # noqa
     assert chat._history[3].total_tokens == len(new_second_prompt) + len(new_second_response)
     assert chat._history[3].cost == chat._history[3].total_tokens * cost_per_token
 
-    assert chat.total_prompt_tokens == chat._history[0].prompt_tokens + \
+    assert chat.prompt_tokens == chat._history[0].prompt_tokens + \
         chat._history[1].prompt_tokens + \
         chat._history[2].prompt_tokens + \
         chat._history[3].prompt_tokens
-    assert chat.total_response_tokens == chat._history[0].response_tokens + \
+    assert chat.response_tokens == chat._history[0].response_tokens + \
         chat._history[1].response_tokens + \
         chat._history[2].response_tokens + \
         chat._history[3].response_tokens
@@ -305,7 +305,7 @@ def test_Chain_with_MockChat_tokens_costs():  # noqa
         chat._history[1].total_tokens + \
         chat._history[2].total_tokens + \
         chat._history[3].total_tokens
-    assert chat.total_cost == chat._history[0].cost + \
+    assert chat.cost == chat._history[0].cost + \
         chat._history[1].cost + \
         chat._history[2].cost + \
         chat._history[3].cost
@@ -313,7 +313,7 @@ def test_Chain_with_MockChat_tokens_costs():  # noqa
     # because the `chat` model is included twice in the chain; this check ensures we are not
     # double-counting the totals
     assert chain.total_tokens == chat.total_tokens
-    assert chain.total_cost == chat.total_cost
+    assert chain.cost == chat.cost
 
 def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     """
@@ -401,10 +401,10 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     assert chat._history[1].total_tokens == len(second_prompt) + len(second_response)
     assert chat._history[1].cost == chat._history[1].total_tokens * cost_per_token_chat
 
-    assert chat.total_prompt_tokens == chat._history[0].prompt_tokens + chat._history[1].prompt_tokens  # noqa
-    assert chat.total_response_tokens == chat._history[0].response_tokens + chat._history[1].response_tokens  # noqa
+    assert chat.prompt_tokens == chat._history[0].prompt_tokens + chat._history[1].prompt_tokens  # noqa
+    assert chat.response_tokens == chat._history[0].response_tokens + chat._history[1].response_tokens  # noqa
     assert chat.total_tokens == chat._history[0].total_tokens + chat._history[1].total_tokens
-    assert chat.total_cost == chat._history[0].cost + chat._history[1].cost
+    assert chat.cost == chat._history[0].cost + chat._history[1].cost
 
     ####
     # Test embeddings model
@@ -416,7 +416,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     assert embeddings._history[1].cost == embeddings._history[1].total_tokens * cost_per_token_embedding  # noqa
 
     assert embeddings.total_tokens == embeddings._history[0].total_tokens + embeddings._history[1].total_tokens  # noqa
-    assert embeddings.total_cost == embeddings._history[0].cost + embeddings._history[1].cost
+    assert embeddings.cost == embeddings._history[0].cost + embeddings._history[1].cost
 
     ####
     # Test chain
@@ -424,7 +424,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     # because the `chat` model is included twice in the chain; this check ensures we are not
     # double-counting the totals
     assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
-    assert chain.total_cost == chat.total_cost + embeddings.total_cost
+    assert chain.cost == chat.cost + embeddings.cost
 
     ####
     # Test using the same chain again
@@ -475,11 +475,11 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     assert chat._history[3].cost == chat._history[3].total_tokens * cost_per_token_chat
 
     # test chat totals
-    assert chat.total_prompt_tokens == chat._history[0].prompt_tokens + \
+    assert chat.prompt_tokens == chat._history[0].prompt_tokens + \
         chat._history[1].prompt_tokens + \
         chat._history[2].prompt_tokens + \
         chat._history[3].prompt_tokens
-    assert chat.total_response_tokens == chat._history[0].response_tokens + \
+    assert chat.response_tokens == chat._history[0].response_tokens + \
         chat._history[1].response_tokens + \
         chat._history[2].response_tokens + \
         chat._history[3].response_tokens
@@ -487,7 +487,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
         chat._history[1].total_tokens + \
         chat._history[2].total_tokens + \
         chat._history[3].total_tokens
-    assert chat.total_cost == chat._history[0].cost + \
+    assert chat.cost == chat._history[0].cost + \
         chat._history[1].cost + \
         chat._history[2].cost + \
         chat._history[3].cost
@@ -511,7 +511,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
         embeddings._history[1].total_tokens + \
         embeddings._history[2].total_tokens + \
         embeddings._history[3].total_tokens
-    assert embeddings.total_cost == embeddings._history[0].cost + \
+    assert embeddings.cost == embeddings._history[0].cost + \
         embeddings._history[1].cost + \
         embeddings._history[2].cost + \
         embeddings._history[3].cost
@@ -522,4 +522,4 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     # because the `chat` model is included twice in the chain; this check ensures we are not
     # double-counting the totals
     assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
-    assert chain.total_cost == chat.total_cost + embeddings.total_cost
+    assert chain.cost == chat.cost + embeddings.cost

@@ -97,7 +97,7 @@ class HistoricalUsageRecords(HistoricalData):
         return None
 
     @property
-    def total_cost(self) -> str:
+    def cost(self) -> str:
         """TODO."""
         if self.history and self.history[0].cost is not None:
             return sum(x.cost for x in self.history)
@@ -135,8 +135,22 @@ class EmbeddingsModel(LargeLanguageModel):
     def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsRecord]:
         """TODO."""
 
-    def __call__(self, docs: list[Document]) -> list[list[float]]:
+    def __call__(self, docs: list[Document] | list[str] | Document | str) -> list[list[float]]:
         """TODO."""
+        if not docs:
+            return []
+        if isinstance(docs, list):
+            if isinstance(docs[0], str):
+                docs = [Document(content=x) for x in docs]
+            else:
+                assert isinstance(docs[0], Document)
+        elif isinstance(docs, Document):
+            docs = [docs]
+        elif isinstance(docs, str):
+            docs = [Document(content=docs)]
+        else:
+            raise TypeError("Invalid type.")
+
         embeddings, metadata = self._run(docs=docs)
         self._history.append(metadata)
         return embeddings
@@ -204,7 +218,7 @@ class ChatModel(LargeLanguageModel):
         return None
 
     @property
-    def total_prompt_tokens(self) -> str:
+    def prompt_tokens(self) -> str:
         """
         Returns the total number of prompt_tokens used by the model during this object's lifetime.
 
@@ -216,7 +230,7 @@ class ChatModel(LargeLanguageModel):
         return None
 
     @property
-    def total_response_tokens(self) -> str:
+    def response_tokens(self) -> str:
         """
         Returns the total number of response_tokens used by the model during this object's
         lifetime.
@@ -262,25 +276,44 @@ class DocumentIndex(HistoricalUsageRecords):
 
     A DocumentIndex should propagate any total_tokens or total_cost used by the underlying models
     (e.g. if it uses an EmbeddingModel), or return None if not applicable.
+
+    TODO: n_results can be passed during object initialization or when called/searched. The latter
+    takes priority.
     """
+
+    def __init__(self, n_results: int = 3) -> None:
+        super().__init__()
+        self._n_results = n_results
 
     def __call__(
             self,
-            value: Document | list[Document],
-            n_results: int = 3) -> list[Document] | None:
+            value: Document | str | list[Document],
+            n_results: int | None = None) -> list[Document] | None:
         """TODO."""
         if isinstance(value, list):
             return self.add(docs=value)
-        assert isinstance(value, Document)
-        return self.search(doc=value, n_results=n_results)
+        if isinstance(value, Document):
+            return self.search(doc=value, n_results=n_results)
+        if isinstance(value, str):
+            return self.search(doc=Document(content=value), n_results=n_results)
+        raise TypeError("Invalid Type")
 
     @abstractmethod
     def add(self, docs: list[Document]) -> None:
         """Add documents to the underlying index/database."""
 
     @abstractmethod
-    def search(self, doc: Document, n_results: int = 3) -> list[Document]:
+    def _search(self, doc: Document, n_results: int) -> list[Document]:
         """Search for documents in the underlying index/database."""
+
+    def search(self, doc: Document, n_results: int | None = None) -> list[Document]:
+        """
+        Search for documents in the underlying index/database.
+
+        TODO: n_results can be passed during object initialization or when called/searched.
+        The latter takes priority.
+        """
+        return self._search(doc=doc, n_results=n_results or self._n_results)
 
     @property
     @abstractmethod
@@ -366,7 +399,7 @@ class Chain:
         return sum(totals)
 
     @property
-    def total_cost(self) -> str:
+    def cost(self) -> str:
         """
         Returns the total number of cost used by the all models during the chain/object's
         lifetime.
