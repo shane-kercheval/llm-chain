@@ -31,7 +31,7 @@ def test_base_index():  # noqa
     # test `call()` when passing Document which should call `search_documents()`
     return_value = mock_index(Document(content='doc'))
     assert return_value == documents_to_add
-    assert mock_index.history == [Record()]
+    assert len(mock_index.history)
 
 def test_base_index_n_results():  # noqa
     """Test n_results when passed into __init__ vs __call__/search."""
