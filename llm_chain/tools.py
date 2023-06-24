@@ -30,7 +30,7 @@ def split_documents(docs: list[Document], max_chunk_size: int = 500) -> list[Doc
     return new_docs
 
 
-def html_page_loader(url: str) -> str:
+def scrape_url(url: str) -> str:
     """TODO."""
     # TODO: test
     import requests

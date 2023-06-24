@@ -1,6 +1,6 @@
 """tests llm_chain/tools.py."""
 from llm_chain.base import Document
-from llm_chain.tools import DuckDuckGoSearch, split_documents
+from llm_chain.tools import DuckDuckGoSearch, split_documents, scrape_url
 
 
 def test_split_documents():  # noqa
@@ -62,7 +62,6 @@ def test_split_documents():  # noqa
         Document(content='abcdefghij', metadata={'doc': 7}, embedding=[7, 7, 7, 7]),
         Document(content='k', metadata={'doc': 7}, embedding=[7, 7, 7, 7]),
     ]
-
     result = split_documents(docs, max_chunk_size)
     assert result == expected_result
 
@@ -87,3 +86,7 @@ def test_DuckDuckGoSearch():  # noqa
     assert len(search.history) == 2
     assert search.history[1].query == query
     assert search.history[1].results == results
+
+def test_scrape_url():  # noqa
+    text = scrape_url(url='https://example.com/')
+    assert 'example' in text.lower()
