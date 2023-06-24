@@ -11,7 +11,9 @@ class ChromaDocumentIndex(DocumentIndex):
     def __init__(
             self,
             embeddings_model: EmbeddingsModel,
-            collection: Collection | None = None) -> None:
+            collection: Collection | None = None,
+            n_results: int = 3) -> None:
+        super().__init__(n_results=n_results)
         self._collection = collection or chromadb.Client().create_collection('temp')
         self._embeddings_model = embeddings_model
 
@@ -41,9 +43,8 @@ class ChromaDocumentIndex(DocumentIndex):
                 ids=ids,
             )
 
-    def search(self, doc: Document, n_results: int = 3) -> list[Document]:
-        """TODO."""
-        embeddings = self._embeddings_model(docs=[doc])
+    def _search(self, doc: Document | str, n_results: int) -> list[Document]:
+        embeddings = self._embeddings_model(docs=doc)
         results = self._collection.query(
             query_embeddings=embeddings,
             n_results=n_results,

@@ -101,6 +101,7 @@ class MockABCDEmbeddings(EmbeddingsModel):
     def __init__(self) -> None:
         super().__init__()
         self.cost_per_token = 7
+        self._next_lookup_index = None
         self.lookup = {
             0: [0.5, 0.5, 0.5, 0.5, 0.5],
             1: [1, 1, 1, 1, 1],
@@ -109,10 +110,14 @@ class MockABCDEmbeddings(EmbeddingsModel):
         }
 
     def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsRecord]:
-        embeddings = [self.lookup[x.metadata['id']] for x in docs]
+        if self._next_lookup_index:
+            embeddings = [self.lookup[self._next_lookup_index]]
+        else:
+            embeddings = [self.lookup[x.metadata['id']] for x in docs]
         total_tokens = sum(len(x.content) for x in docs)
         cost = total_tokens * self.cost_per_token
         return embeddings, EmbeddingsRecord(
             total_tokens=total_tokens,
             cost=cost,
+            metadata={'content': [x.content for x in docs]},
         )

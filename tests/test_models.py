@@ -1,5 +1,6 @@
 """tests llm_chain/models.py."""
-from llm_chain.base import Document, EmbeddingsRecord, MessageRecord, StreamingRecord
+from llm_chain.base import Document, EmbeddingsModel, EmbeddingsRecord, MessageRecord, \
+    StreamingRecord
 from llm_chain.models import OpenAIChat, OpenAIEmbeddings
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 from tests.conftest import MockChat, MockRandomEmbeddings
@@ -389,6 +390,37 @@ def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
     assert non_streaming_chat.prompt_tokens == streaming_chat.prompt_tokens
     assert non_streaming_chat.response_tokens == streaming_chat.response_tokens
     assert non_streaming_chat.total_tokens == streaming_chat.total_tokens
+
+def test_EmbeddingsModel__called_with_different_types():  # noqa
+    class MockEmbeddings(EmbeddingsModel):
+        def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsRecord]:
+            return docs, EmbeddingsRecord(metadata={'content': docs})
+
+    embeddings = MockEmbeddings()
+    value = 'string value'
+    expected_value = [Document(content=value)]
+    result = embeddings(docs=value)
+    assert result == expected_value
+    assert embeddings.history[0].metadata == {'content': expected_value}
+
+    value = 'Document value'
+    expected_value = [Document(content=value)]
+    result = embeddings(docs=Document(content=value))
+    assert result == expected_value
+    assert embeddings.history[1].metadata == {'content': expected_value}
+
+    value = ['string value 1', 'string value 2']
+    expected_value = [Document(content=x) for x in value]
+    result = embeddings(docs=value)
+    assert result == expected_value
+    assert embeddings.history[2].metadata == {'content': expected_value}
+
+    value = [Document(content='document value 1'), Document(content='document value 2')]
+    expected_value = value
+    result = embeddings(docs=value)
+    assert result == expected_value
+    assert embeddings.history[3].metadata == {'content': expected_value}
+
 
 def test_EmbeddingsModel__no_costs():  # noqa
     model = MockRandomEmbeddings(token_counter=len, cost_per_token=None)

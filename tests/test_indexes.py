@@ -6,15 +6,15 @@ from tests.conftest import MockABCDEmbeddings, MockRandomEmbeddings
 
 
 class MockIndex(DocumentIndex):  # noqa
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, n_results: int = 3) -> None:
+        super().__init__(n_results=n_results)
         self.documents = []
 
     def add(self, docs: list[Document]) -> None:  # noqa
         self.documents += docs
 
-    def search(self, doc: Document, n_results: int = 3) -> list[Document]:  # noqa
-        return self.documents
+    def _search(self, doc: Document, n_results: int = 3) -> list[Document]:  # noqa
+        return self.documents[0:n_results]
 
     @property
     def history(self) -> list[Record]:  # noqa
@@ -24,13 +24,37 @@ class MockIndex(DocumentIndex):  # noqa
 def test_base_index():  # noqa
     mock_index = MockIndex()
     # test `call()` when passing list[Document] which should call `add_documents()`
-    documents_to_add = [Document(content='Doc A'), Document(content='Doc A')]
+    documents_to_add = [Document(content='Doc A'), Document(content='Doc B')]
     return_value = mock_index(documents_to_add)
     assert return_value is None
     assert mock_index.documents == documents_to_add
     # test `call()` when passing Document which should call `search_documents()`
     return_value = mock_index(Document(content='doc'))
     assert return_value == documents_to_add
+
+def test_base_index_n_results():  # noqa
+    """Test n_results when passed into __init__ vs __call__/search."""
+    default_n_results = 2
+    mock_index = MockIndex(n_results=default_n_results)
+    # test `call()` when passing list[Document] which should call `add_documents()`
+    documents_to_add = [
+        Document(content='Doc A'),
+        Document(content='Doc B'),
+        Document(content='Doc C'),
+        Document(content='Doc D'),
+    ]
+    return_value = mock_index(documents_to_add)
+    assert return_value is None
+    assert mock_index.documents == documents_to_add
+
+    return_value = mock_index(Document(content='this doc is ignored in mock'))
+    assert return_value == documents_to_add[0:default_n_results]
+    return_value = mock_index(Document(content='this doc is ignored in mock'), n_results=1)
+    assert return_value == documents_to_add[0:1]
+    return_value = mock_index(Document(content='this doc is ignored in mock'), n_results=2)
+    assert return_value == documents_to_add[0:2]
+    return_value = mock_index(Document(content='this doc is ignored in mock'), n_results=3)
+    assert return_value == documents_to_add[0:3]
 
 def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     embeddings_model = MockABCDEmbeddings()
@@ -151,3 +175,19 @@ def test_chroma_add_document_without_metadata():  # noqa
 
     results = doc_index.search(doc=docs[0], n_results=1)
     assert 'distance' in results[0].metadata
+
+def test_chroma_search_with_document_and_str(fake_docs_abcd):  # noqa
+    embeddings_model = MockABCDEmbeddings()
+    client = chromadb.Client()
+    collection = client.create_collection("test")
+    chroma_db = ChromaDocumentIndex(collection=collection, embeddings_model=embeddings_model)
+    chroma_db.add(docs=fake_docs_abcd)
+    # we don't need to test that the results are in the correct order; that is done above
+    # we just need to test that searching with a Document returns the same results as searching
+    # with a str
+    assert isinstance(fake_docs_abcd[1], Document)
+    doc_results = chroma_db.search(doc=fake_docs_abcd[1])  # pass document object
+    chroma_db._embeddings_model._next_lookup_index = 1
+    str_results = chroma_db.search(doc=fake_docs_abcd[1].content)  # pass string
+    assert doc_results == str_results
+    assert chroma_db.history[1].metadata == chroma_db.history[2].metadata

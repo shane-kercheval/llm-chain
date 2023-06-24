@@ -4,7 +4,7 @@ modified prompt. Each prompt_template is given the information it needs when it 
 So for example, if a template's job is to search for relevant documents, it's provided the vector
 database when the object is created (not via __call__).
 """
-from llm_chain.base import Document, DocumentIndex, EmbeddingsRecord, PromptTemplate
+from llm_chain.base import DocumentIndex, EmbeddingsRecord, PromptTemplate
 from llm_chain.resources import PROMPT_TEMLATE__DOC_SEARCH_STUFF
 
 
@@ -39,7 +39,7 @@ class DocSearchTemplate(PromptTemplate):
     def __call__(self, prompt: str) -> str:  # noqa
         super().__call__(prompt)
         self.similar_docs = self._doc_index.search(
-            doc=Document(content=prompt),
+            doc=prompt,
             n_results=self.n_docs,
         )
         doc_string = '\n\n'.join([x.content for x in self.similar_docs])
