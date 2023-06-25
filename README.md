@@ -20,6 +20,13 @@ pip install llm-chain
 
 # Examples
 
+## Notebooks
+
+- [chains.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb)
+- [openai_chat.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/openai_chat.ipynb)
+- [memory.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/memory.ipynb)
+
+
 ## Simple ChatGPT example - **no chaining**
 
 We can, of course, use the objects without a chain.
@@ -117,6 +124,8 @@ Output:
 Cost:   $0.0054
 Tokens: 45,674
 ```
+
+Additionally, we can track the history of the chain with the `chain.history` property. See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an example.
 
 ---
 
