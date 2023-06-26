@@ -1,11 +1,8 @@
-# llm-chain
-
-Simple and extensible LLM chaining.
+# `llm-chain`: simple and extensible LLM chaining
 
 A `chain` consists of `links`. Each link in the chain is a callable, which can be either a function or an object that implements the `__call__` method. **The output of one link serves as the input to the next link in the chain.** Pretty simple.
 
-- Each link can track its own history, including messages sent/received and token usage/costs, through a `history` property that returns a list of `Record` objects.
-- A `chain` aggregates and propagates the history of any link that has a `history` property, making it convenient to analyze costs or explore intermediate steps in the chain.
+Additionally, each link can track its own history, including messages sent/received and token usage/costs, through a `history` property that returns a list of `Record` objects. A `chain` aggregates and propagates the history of any link that has a `history` property, making it convenient to analyze costs or explore intermediate steps in the chain.
 
 **Note: This package is tested on Python versions 3.10 and 3.11**
 
