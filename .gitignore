@@ -134,3 +134,4 @@ dmypy.json
 .vscode/launch.json
 .vscode/settings.json
 !tests/test_files/logging/*.log
+.chroma
