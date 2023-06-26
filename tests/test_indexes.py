@@ -1,5 +1,6 @@
 """test llm_chain/vector_db/chroma.db."""
 import chromadb
+import pytest
 from llm_chain.base import Document, DocumentIndex, Record
 from llm_chain.indexes import ChromaDocumentIndex
 from tests.conftest import MockABCDEmbeddings, MockRandomEmbeddings
@@ -23,6 +24,8 @@ class MockIndex(DocumentIndex):  # noqa
 
 def test_base_index():  # noqa
     mock_index = MockIndex()
+    with pytest.raises(TypeError):
+        mock_index(1)
     # test `call()` when passing list[Document] which should call `add_documents()`
     documents_to_add = [Document(content='Doc A'), Document(content='Doc B')]
     return_value = mock_index(documents_to_add)

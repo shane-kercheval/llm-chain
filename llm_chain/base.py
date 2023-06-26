@@ -34,8 +34,8 @@ class UsageRecord(Record):
     cost: float | None = None
 
     def __str__(self) -> str:
-        return f"timestamp: {self.timestamp}; cost: ${self.cost:.6f}; " \
-            f"total_tokens: {self.total_tokens:,}; metadata: {self.metadata}"
+        return f"timestamp: {self.timestamp}; cost: ${self.cost or 0:.6f}; " \
+            f"total_tokens: {self.total_tokens or 0:,}; metadata: {self.metadata}"
 
 
 class MessageRecord(UsageRecord):
@@ -54,7 +54,7 @@ class MessageRecord(UsageRecord):
     def __str__(self) -> str:
         return f"timestamp: {self.timestamp}; prompt: \"{self.prompt.strip()[0:20]}...\"; "\
             f"response: \"{self.response.strip()[0:20]}...\";  " \
-            f"cost: ${self.cost:.6f}; total_tokens: {self.total_tokens:,}; " \
+            f"cost: ${self.cost or 0:.6f}; total_tokens: {self.total_tokens or 0:,}; " \
             f"metadata: {self.metadata}"
 
 
