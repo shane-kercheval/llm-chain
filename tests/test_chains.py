@@ -75,7 +75,6 @@ def test_Value():  # noqa
     assert value('test') == 'test'
     assert value() == 'test'
 
-
 def test_chain():  # noqa
     # test empty chain
     chain = Chain(links=[])
@@ -523,3 +522,21 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     # double-counting the totals
     assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
     assert chain.cost == chat.cost + embeddings.cost
+
+def test_Chain_with_empty_history():  # noqa
+    class EmptyHistory:
+        @property
+        def history(self) -> list:
+            return []
+
+    class NoneHistory:
+        @property
+        def history(self) -> list:
+            return None
+
+    chain = Chain(links=[EmptyHistory()])
+    assert chain.history == []
+    chain = Chain(links=[NoneHistory()])
+    assert chain.history == []
+    chain = Chain(links=[EmptyHistory(), NoneHistory()])
+    assert chain.history == []

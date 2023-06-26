@@ -1,6 +1,7 @@
 """tests llm_chain/models.py."""
-from llm_chain.base import Document, EmbeddingsModel, EmbeddingsRecord, MessageRecord, \
-    StreamingRecord
+import pytest
+from llm_chain.base import Document, EmbeddingsModel, EmbeddingsRecord, MessageRecord, Record, \
+    StreamingRecord, UsageRecord
 from llm_chain.models import OpenAIChat, OpenAIEmbeddings
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 from tests.conftest import MockChat, MockRandomEmbeddings
@@ -397,6 +398,11 @@ def test_EmbeddingsModel__called_with_different_types():  # noqa
             return docs, EmbeddingsRecord(metadata={'content': docs})
 
     embeddings = MockEmbeddings()
+    assert embeddings(None) == []
+    assert embeddings([]) == []
+    with pytest.raises(TypeError):
+        embeddings(1)
+
     value = 'string value'
     expected_value = [Document(content=value)]
     result = embeddings(docs=value)
@@ -654,3 +660,29 @@ def test_OpenAIEmbeddings():  # noqa
 
     assert model.total_tokens == previous_tokens + previous_record.total_tokens
     assert model.cost == previous_cost + expected_cost
+
+def test_Records_to_string():  # noqa
+    assert 'timestamp: ' in str(Record())
+    assert 'metadata: ' in str(Record())
+
+    assert 'timestamp: ' in str(UsageRecord())
+    assert 'metadata: ' in str(UsageRecord())
+    assert 'cost: ' in str(UsageRecord())
+    assert 'total_tokens: ' in str(UsageRecord())
+
+    assert 'timestamp: ' in str(UsageRecord(total_tokens=1000, cost=1.5))
+    assert 'metadata: ' in str(UsageRecord(total_tokens=1000, cost=1.5))
+    assert 'cost: $1.5' in str(UsageRecord(total_tokens=1000, cost=1.5))
+    assert 'total_tokens: 1,000' in str(UsageRecord(total_tokens=1000, cost=1.5))
+
+    assert 'timestamp: ' in str(MessageRecord(prompt='prompt', response='response'))
+    assert 'prompt: "prompt' in str(MessageRecord(prompt='prompt', response='response'))
+    assert 'response: "response' in str(MessageRecord(prompt='prompt', response='response'))
+    assert 'cost: ' in str(MessageRecord(prompt='prompt', response='response'))
+    assert 'total_tokens: ' in str(MessageRecord(prompt='prompt', response='response'))
+
+    assert 'timestamp: ' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
+    assert 'prompt: "prompt' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
+    assert 'response: "response' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
+    assert 'cost: $1.5' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
+    assert 'total_tokens: 1,000' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa

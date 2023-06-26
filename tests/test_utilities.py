@@ -75,6 +75,14 @@ def test_num_tokens_from_messages():  # noqa
     actual_value = num_tokens_from_messages(model_name=model_name, messages=example_messages)
     assert expected_value == actual_value
 
+    # above we checked that the numbers match exactly from what OpenAI returns;
+    # here, let's just check that the other models run and return >0 to avoid API calls
+    assert num_tokens_from_messages(model_name='gpt-3.5-turbo-0301', messages=example_messages) > 0
+    assert num_tokens_from_messages(model_name='gpt-4', messages=example_messages) > 0
+    assert num_tokens_from_messages(model_name='gpt-4-0314', messages=example_messages) > 0
+    with pytest.raises(NotImplementedError):
+        num_tokens_from_messages(model_name='<not implemented>', messages=example_messages)
+
 def test_retry_handler():  # noqa
     r = retry_handler()
     actual_value = r(

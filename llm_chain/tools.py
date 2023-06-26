@@ -1,32 +1,43 @@
 """TODO."""
 from itertools import islice
+import re
 from llm_chain.base import Document, HistoricalData, Record
 
 
-def split_documents(docs: list[Document], max_chunk_size: int = 500) -> list[Document]:
-    """TODO."""
+def split_documents(
+        docs: list[Document],
+        max_chars: int = 500,
+        preserve_words: bool = True) -> list[Document]:
+    """TODO. Mention that it keeps the entire word. Does not return empty documents."""
     new_docs = []
     for doc in docs:
         if doc.content:
-            content = doc.content
+            content = doc.content.strip()
             metadata = doc.metadata
-            while len(content) > max_chunk_size:
+            while len(content) > max_chars:
+                # find the last space that is within the limit
+                if preserve_words:
+                    split_at = max_chars
+                    # find the last whitespace that is within the limit
+                    # if no whitespace found, take the whole chunk
+                    # we are going 1 beyond the limit in case it is whitespace so that
+                    # we can keep everything up until that point
+                    for match in re.finditer(r'\s', content[:max_chars + 1]):
+                        split_at = match.start()
+                else:
+                    split_at = max_chars
                 new_doc = Document(
-                    content=content[:max_chunk_size],
+                    content=content[:split_at].strip(),
                     metadata=metadata,
                 )
                 new_docs.append(new_doc)
-                content = content[max_chunk_size:]  # remove the chunk we added
+                content = content[split_at:].strip()  # remove the chunk we added
             # check for remaining/leftover content
             if content:
                 new_docs.append(Document(
                     content=content,
                     metadata=metadata,
                 ))
-        else:
-            # edge case for empty document; we need to make sure it is added to the list
-            new_docs.append(doc)
-
     return new_docs
 
 

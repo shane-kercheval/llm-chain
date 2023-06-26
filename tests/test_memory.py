@@ -1,12 +1,12 @@
 """tests llm_chain/memory.py."""
 
 from llm_chain.base import MessageRecord
-from llm_chain.memory import MemoryBufferMessageWindow
+from llm_chain.memory import MemoryBufferMessageWindow, MemoryBufferTokenWindow
 from llm_chain.models import OpenAIChat
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 
 
-def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
+def test_OpenAIChat__MemoryBufferMessageWindow0():  # noqa
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(
         model_name=model_name,
@@ -97,7 +97,7 @@ def test_OpenAIChat__MemoryBufferWindow_0():  # noqa
     assert openai_llm.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
     assert openai_llm.response_tokens == previous_response_tokens + message.response_tokens
 
-def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
+def test_OpenAIChat__MemoryBufferMessageWindow1():  # noqa
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(
         model_name=model_name,
@@ -273,4 +273,64 @@ def test_OpenAIChat__MemoryBufferWindow_1():  # noqa
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
 
-# TODO: test MemoryBufferTokenWindow
+def test_OpenAIChat__MemoryBufferTokenWindow():  # noqa
+    token_threshold = 80
+    model_name = 'gpt-3.5-turbo'
+    openai_llm = OpenAIChat(
+        model_name=model_name,
+        memory_strategy=MemoryBufferTokenWindow(last_n_tokens=token_threshold),
+    )
+    assert openai_llm.previous_message is None
+    assert openai_llm.previous_prompt is None
+    assert openai_llm.previous_response is None
+    assert openai_llm.cost is None
+    assert openai_llm.total_tokens is None
+    assert openai_llm.prompt_tokens is None
+    assert openai_llm.response_tokens is None
+
+    ####
+    # first interaction
+    # this shouldn't be any different
+    ####
+    prompt = "Hi my name is Shane and my favorite number is 42 and my favorite color is blue. What is my mame?"  # noqa
+    response = openai_llm(prompt)
+    assert 'shane' in response.lower()
+    assert isinstance(response, str)
+    assert len(openai_llm._previous_memory) == 2
+    assert openai_llm.previous_message.total_tokens <= token_threshold
+    assert openai_llm._previous_memory[0]['role'] == 'system'
+    assert openai_llm._previous_memory[-1]['role'] == 'user'
+    assert openai_llm._previous_memory[-1]['content'] == prompt
+    assert len(openai_llm._history) == 1
+
+    ####
+    # second interaction
+    # The previous message/memory should be under the threshold, so it should know my favorite
+    # number
+    ####
+    prompt = "What is my favorite number?"
+    response = openai_llm(prompt)
+    assert '42' in response.lower()
+    assert len(openai_llm._previous_memory) == 4
+    assert openai_llm.previous_message.total_tokens <= token_threshold
+    assert openai_llm._previous_memory[0]['role'] == 'system'
+    assert openai_llm._previous_memory[-1]['role'] == 'user'
+    assert openai_llm._previous_memory[-1]['content'] == prompt
+    assert len(openai_llm._history) == 2
+
+    ####
+    # third interaction
+    # The token threshold isn't high enough to send all of the messages so the first message will
+    # be removed.
+    ####
+    prompt = "What is my favorite color?"
+    response = openai_llm(prompt)
+
+    assert 'blue' not in response.lower()
+    # previous memory is still 4 since it only remembers last message + new prompt + system mesasge
+    assert len(openai_llm._previous_memory) == 4
+    assert openai_llm.previous_message.total_tokens <= token_threshold
+    assert openai_llm._previous_memory[0]['role'] == 'system'
+    assert openai_llm._previous_memory[-1]['role'] == 'user'
+    assert openai_llm._previous_memory[-1]['content'] == prompt
+    assert len(openai_llm._history) == 3
