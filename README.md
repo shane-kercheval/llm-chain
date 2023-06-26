@@ -2,13 +2,12 @@
 
 Simple and extensible LLM chaining.
 
-A `chain` consists of `links`. A link is a callable (either a function or an object that implements `__call__`). **The output of one link is the input to the next link.** Pretty simple.
+A `chain` consists of `links`. Each link in the chain is a callable, which can be either a function or an object that implements the `__call__` method. **The output of one link serves as the input to the next link in the chain.** Pretty simple.
 
+- Each link can track its own history, including messages sent/received and token usage/costs, through a `history` property that returns a list of `Record` objects.
+- A `chain` aggregates and propagates the history of any link that has a `history` property, making it convenient to analyze costs or explore intermediate steps in the chain.
 
-- Each `link` can track it's own history (e.g. messages sent to/from chat model and corresponding token usage/costs) via a `history` property that returns a list of `Record` objects.
-- A `chain` aggregates/propagates the history of any `link` that has a `history` property. This provides an easy way aggregate costs or to explore any intermediate steps in the link.
-
-**NOTE: This package is tested on Python `3.10` and `3.11`**
+**Note: This package is tested on Python versions 3.10 and 3.11**
 
 ---
 
@@ -34,7 +33,7 @@ pip install llm-chain
 
 ## Simple ChatGPT example - **no chaining**
 
-We can, of course, use the objects without a chain.
+You can use the objects from llm-chain without a chain as well. Here's an example using the OpenAIChat model:
 
 ```python
 from llm_chain.models import OpenAIChat
@@ -50,21 +49,23 @@ The meaning of life is a philosophical question that has been debated by scholar
 
 ## Using a Chain
 
-Here's an example where we chain together the following tasks:
+Here's an example of using a chain to perform the following series of tasks:
 
-- ask a question
-- do a web-search based on the question
-- scrape the top_n web-pages from the search results
-- split the web-pages up into chunks (so that we can search for the most relevant chunks)
-- save the chunks to a document index (i.e. vector database)
-- create a prompt that includes the original question along with the most relevant chunks
-- send the prompt to the chat model
-- create a second prompt that asks the model to summarize the prevoius response
-- send the second prompt to the chat model
+- Ask a question.
+- Perform a web search based on the question.
+- Scrape the top_n web pages from the search results.
+- Split the web pages into chunks (so that we can search for the most relevant chunks).
+- Save the chunks to a document index (i.e. vector database).
+- Create a prompt that includes the original question and the most relevant chunks.
+- Send the prompt to the chat model.
+- Create a second prompt that asks the model to summarize the previous response.
+- Send the second prompt to the chat model.
 
-**Again, the key concept of a chain is simply that the output of one link is the input of the next link.** So, in the code below, you can replace any step with your own implementation, as long as the input/output matches the link you replace.
+In the code below, you can replace any step with your own implementation as long as the input/output matches the link you replace.
 
-One thing to note is the `Value` object being used below. It's just a simple caching mechanism. It's a callable that, when passed a value, it caches and returns that value; and when called without a value, it returns the cached value. Below, it's being used to cache the original question, feed the question into the web-search, and then re-inject the question back in the chain and into the prompt-template.
+**Again, the key concept of a chain is simply that the output of one link is the input of the next link.** So, in the code below, you can replace any step with your own implementation as long as the input/output matches the link you replace.
+
+Something that may not be immediately obvious is the usage of the `Value` object, below. It serves as a convenient caching mechanism within the chain. The `Value` object is callable, allowing it to cache and return a value when provided as an argument. When called without a value, it retrieves and returns the cached value. In the given context, the `Value` object is utilized to cache the original question, pass it to the web search, and subsequently reintroduce the question into the chain and prompt template.
 
 See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an in-depth explanation.
 
@@ -145,50 +146,42 @@ Additionally, we can track the history of the chain with the `chain.history` pro
 
 ## Contributing
 
-Anyone is welcome to contribute to this project. Please make sure coding standards are followed, add the appropriate unit-tests, and run all linting and tests before submitting pull requests. Thank you!
+Contributions to this project are welcome. Please follow the coding standards, add appropriate unit tests, and ensure that all linting and tests pass before submitting pull requests.
 
 ### Coding Standards
 
-- Coding standards should follow PEP 8 (Style Guide for Python Code)
+- Coding standards should follow PEP 8 (Style Guide for Python Code).
     - https://peps.python.org/pep-0008/
     - Exceptions:
-        - use max line length of `99` rather than the suggested `79`
-- document all files, classes, functions
-    - following existing documentation style
-
+        - Use a maximum line length of 99 instead of the suggested 79.
+- Document all files, classes, and functions following the existing documentation style.
 
 ### Docker
 
-See `Makefile` for all commands.
+See the Makefile for all available commands.
 
-To build the docker container:
+To build the Docker container:
 
 ```commandline
 make docker_build
 ```
 
-To run the terminal inside the docker container:
+To run the terminal inside the Docker container:
 
 ```commandline
 make docker_zsh
 ```
 
-To run the unit tests (including linting and doc-tests) from the commandline inside the docker container:
+To run the unit tests (including linting and doctests) from the command line inside the Docker container:
 
 ```commandline
 make tests
 ```
 
-To run the unit tests (including linting and doc-tests) from the commandline outside the docker container:
+To run the unit tests (including linting and doctests) from the command line outside the Docker container:
 
 ```commandline
 make docker_tests
-```
-
-To build the python package and uploat do PyPI via twine from the commandline outside the docker container:
-
-```commandline
-make all
 ```
 
 ### Pre-Check-in
