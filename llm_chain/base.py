@@ -90,14 +90,14 @@ class HistoricalUsageRecords(HistoricalData):
         """TODO."""
 
     @property
-    def total_tokens(self) -> str:
+    def total_tokens(self) -> int | None:
         """TODO."""
         if self.history and self.history[0].total_tokens is not None:
             return sum(x.total_tokens for x in self.history)
         return None
 
     @property
-    def cost(self) -> str:
+    def cost(self) -> float | None:
         """TODO."""
         if self.history and self.history[0].cost is not None:
             return sum(x.cost for x in self.history)
@@ -195,14 +195,14 @@ class ChatModel(LargeLanguageModel):
         return self._history
 
     @property
-    def previous_message(self) -> MessageRecord:
+    def previous_message(self) -> MessageRecord | None:
         """Returns the last/previous message (MessageMetaData) associated with the chat model."""
         if len(self.history) == 0:
             return None
         return self.history[-1]
 
     @property
-    def previous_prompt(self) -> str:
+    def previous_prompt(self) -> str | None:
         """Returns the last/previous prompt used in chat model."""
         previous_message = self.previous_message
         if previous_message:
@@ -210,7 +210,7 @@ class ChatModel(LargeLanguageModel):
         return None
 
     @property
-    def previous_response(self) -> str:
+    def previous_response(self) -> str | None:
         """Returns the last/previous response used in chat model."""
         previous_message = self.previous_message
         if previous_message:
@@ -218,7 +218,7 @@ class ChatModel(LargeLanguageModel):
         return None
 
     @property
-    def prompt_tokens(self) -> str:
+    def prompt_tokens(self) -> int | None:
         """
         Returns the total number of prompt_tokens used by the model during this object's lifetime.
 
@@ -230,7 +230,7 @@ class ChatModel(LargeLanguageModel):
         return None
 
     @property
-    def response_tokens(self) -> str:
+    def response_tokens(self) -> int | None:
         """
         Returns the total number of response_tokens used by the model during this object's
         lifetime.
@@ -388,7 +388,7 @@ class Chain:
         return [x for x in self.history if isinstance(x, MessageRecord)]
 
     @property
-    def total_tokens(self) -> str:
+    def total_tokens(self) -> int | None:
         """
         Returns the total number of tokens used by the all models during the chain/object's
         lifetime.
@@ -402,7 +402,7 @@ class Chain:
         return sum(totals)
 
     @property
-    def cost(self) -> str:
+    def cost(self) -> float | None:
         """
         Returns the total number of cost used by the all models during the chain/object's
         lifetime.
