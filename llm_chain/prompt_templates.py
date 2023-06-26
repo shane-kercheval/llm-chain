@@ -39,7 +39,7 @@ class DocSearchTemplate(PromptTemplate):
     def __call__(self, prompt: str) -> str:  # noqa
         super().__call__(prompt)
         self.similar_docs = self._doc_index.search(
-            doc=prompt,
+            value=prompt,
             n_results=self.n_docs,
         )
         doc_string = '\n\n'.join([x.content for x in self.similar_docs])

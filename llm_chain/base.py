@@ -292,10 +292,8 @@ class DocumentIndex(HistoricalUsageRecords):
         """TODO."""
         if isinstance(value, list):
             return self.add(docs=value)
-        if isinstance(value, Document):
-            return self.search(doc=value, n_results=n_results)
-        if isinstance(value, str):
-            return self.search(doc=Document(content=value), n_results=n_results)
+        if isinstance(value, Document | str):
+            return self.search(value=value, n_results=n_results)
         raise TypeError("Invalid Type")
 
     @abstractmethod
@@ -306,14 +304,19 @@ class DocumentIndex(HistoricalUsageRecords):
     def _search(self, doc: Document, n_results: int) -> list[Document]:
         """Search for documents in the underlying index/database."""
 
-    def search(self, doc: Document, n_results: int | None = None) -> list[Document]:
+    def search(
+            self,
+            value: Document | str,
+            n_results: int | None = None) -> list[Document]:
         """
         Search for documents in the underlying index/database.
 
         TODO: n_results can be passed during object initialization or when called/searched.
         The latter takes priority.
         """
-        return self._search(doc=doc, n_results=n_results or self._n_results)
+        if isinstance(value, str):
+            value = Document(content=value)
+        return self._search(doc=value, n_results=n_results or self._n_results)
 
     @property
     @abstractmethod
