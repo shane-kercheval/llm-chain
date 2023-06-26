@@ -55,7 +55,8 @@ open_coverage:
 
 ## Build package
 package: clean
-	# cp ~/.pypirc ./.pypirc
+	# NOTE: make sure .pypirc file is in home directory
+	# cp .pypirc ~/
 	rm -fr dist
 	python -m build
 	twine upload dist/*
