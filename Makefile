@@ -54,7 +54,7 @@ open_coverage:
 ####
 
 ## Build package
-package: tests clean
+package: clean
 	# cp ~/.pypirc ./.pypirc
 	rm -fr dist
 	python -m build
