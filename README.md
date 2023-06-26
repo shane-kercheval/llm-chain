@@ -2,9 +2,11 @@
 
 Simple and extensible LLM chaining.
 
-- A `chain` consists of `links`. A link is a callable (either a function or an object that implements `__call__`). **The output of one link is the input to the next link.** Pretty simple.
+A `chain` consists of `links`. A link is a callable (either a function or an object that implements `__call__`). **The output of one link is the input to the next link.** Pretty simple.
+
+
 - Each `link` can track it's own history (e.g. messages sent to/from chat model and corresponding token usage/costs) via a `history` property that returns a list of `Record` objects.
-- A `chain` aggregates the history of any `link` that has a `history` property. This provides an easy way aggregate costs or to explore any intermediate steps in the link.
+- A `chain` aggregates/propagates the history of any `link` that has a `history` property. This provides an easy way aggregate costs or to explore any intermediate steps in the link.
 
 **NOTE: This package is tested on Python `3.10` and `3.11`**
 
@@ -51,16 +53,18 @@ The meaning of life is a philosophical question that has been debated by scholar
 Here's an example where we chain together the following tasks:
 
 - ask a question
-- do a web-search
-- scrape the top_n web-pages
-- split the pages up into chunks
-- save the chunks to document index (i.e. vector database)
+- do a web-search based on the question
+- scrape the top_n web-pages from the search results
+- split the web-pages up into chunks (so that we can search for the most relevant chunks)
+- save the chunks to a document index (i.e. vector database)
 - create a prompt that includes the original question along with the most relevant chunks
 - send the prompt to the chat model
-- create a second prompt that asks the model to summarize the response
+- create a second prompt that asks the model to summarize the prevoius response
 - send the second prompt to the chat model
 
-One thing to note is the `Value` object being used below. It's just a simple caching mechanism. It's a callable that, when passed a value, it caches and returns that value; and when called without a value, it returns the cached value. Below, it's being used to cache the original question, feed the question into the web-search, and then re-inject the question back in the chain into the prompt-template.
+**Again, the key concept of a chain is simply that the output of one link is the input of the next link.** So, in the code below, you can replace any step with your own implementation, as long as the input/output matches the link you replace.
+
+One thing to note is the `Value` object being used below. It's just a simple caching mechanism. It's a callable that, when passed a value, it caches and returns that value; and when called without a value, it returns the cached value. Below, it's being used to cache the original question, feed the question into the web-search, and then re-inject the question back in the chain and into the prompt-template.
 
 See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an in-depth explanation.
 
@@ -89,17 +93,17 @@ def scrape_urls(search_results):
         for x in search_results
     ]
 
-initial_question = Value()  # see note above
+question_1 = Value()  # Value is a caching/reinjection mechanism; see note above
 question_2 = lambda x: f'Summarize the following in less than 20 words: "{x}"'
 
 # each link is a callable where the output of one link is the input to the next link
 chain = Chain(links=[
-    initial_question,
+    question_1,
     duckduckgo_search,
     scrape_urls,
     split_documents,
     document_index,
-    initial_question,
+    question_1,
     prompt_template,
     chat_model,
     question_2,
@@ -134,11 +138,14 @@ Additionally, we can track the history of the chain with the `chain.history` pro
 
 # TODO
 
-- [ ] PDF Loader
+- [ ] Create PDF-Loader
+- [ ] create additional prompt-templates
 
 ---
 
 ## Contributing
+
+Anyone is welcome to contribute to this project. Please make sure coding standards are followed, add the appropriate unit-tests, and run all linting and tests before submitting pull requests. Thank you!
 
 ### Coding Standards
 
@@ -190,14 +197,8 @@ make all
 
 The unit tests in this project are all found in the `/tests` directory.
 
-In the terminal, in the project directory, either run the Makefile command,
+In the terminal, in the project directory, run the following command to run linting and unit-tests:
 
 ```commandline
 make tests
-```
-
-or the python command for running all tests
-
-```commandline
-python -m unittest discover ./tests
 ```
