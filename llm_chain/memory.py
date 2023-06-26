@@ -29,8 +29,8 @@ class MemoryBufferTokenWindow(MemoryBuffer):
         memory = []
         tokens_used = 0
         for message in history:
-            # if the message's tokens plus the tokens already used in the memory is more than the
-            # threshold then we need to break and avoid adding more memory
+            # if the message's tokens plus the tokens that are already used in the memory is more
+            # than the threshold then we need to break and avoid adding more memory
             if message.total_tokens + tokens_used > self.last_n_tokens:
                 break
             memory.append(message)
