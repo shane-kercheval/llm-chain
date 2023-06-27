@@ -148,7 +148,6 @@ def test_usage_history():  # noqa
         mock_records.record_c.cost
 
 def test_usage_history_no_usage():  # noqa
-    sum([])
     mock_records = MockNoUsageRecords()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once

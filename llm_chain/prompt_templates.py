@@ -8,8 +8,6 @@ from llm_chain.base import DocumentIndex, EmbeddingsRecord, PromptTemplate
 from llm_chain.resources import PROMPT_TEMLATE__DOC_SEARCH_STUFF
 
 
-class 
-
 class DocSearchTemplate(PromptTemplate):
     """
     DocSearchTemplate is a prompt-template that, based on the prompt provided when the object is
