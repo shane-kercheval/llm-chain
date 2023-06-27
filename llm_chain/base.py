@@ -337,7 +337,54 @@ class Value:
         return self.value
 
 
-class Chain:
+class LinkAggregator(ABC):
+    """TODO."""
+
+    @property
+    @abstractmethod
+    def history(self) -> list[Record]:
+        """TODO."""
+
+    @property
+    def usage_history(self) -> list[UsageRecord]:
+        """TODO."""
+        return [x for x in self.history if isinstance(x, UsageRecord)]
+
+    @property
+    def message_history(self) -> list[UsageRecord]:
+        """TODO."""
+        return [x for x in self.history if isinstance(x, MessageRecord)]
+
+    @property
+    def total_tokens(self) -> int | None:
+        """
+        Returns the total number of tokens used by the all models during the chain/object's
+        lifetime.
+
+        Returns `None` if none of the models knows how to count tokens.
+        """
+        records = self.usage_history
+        totals = [x.total_tokens for x in records if x.total_tokens]
+        if not totals:
+            return None
+        return sum(totals)
+
+    @property
+    def cost(self) -> float | None:
+        """
+        Returns the total number of cost used by the all models during the chain/object's
+        lifetime.
+
+        Returns `None` if none of the models knows how to count cost.
+        """
+        records = self.usage_history
+        totals = [x.cost for x in records if x.cost]
+        if not totals:
+            return None
+        return sum(totals)
+
+
+class Chain(LinkAggregator):
     """TODO."""
 
     def __init__(self, links: list[Callable[[Any], Any]]):
@@ -377,43 +424,49 @@ class Chain:
                     unique_uuids |= {record.uuid}
         return sorted(unique_records, key=lambda x: x.timestamp)
 
-    @property
-    def usage_history(self) -> list[UsageRecord]:
+
+class Session(LinkAggregator):
+    """
+    TODO: A session is a way to aggregate the history of chains, calling a session will call
+    the last chain added to the session.
+    """
+
+    def __init__(self, chains: list[Chain] | None = None):
+        self._chains = chains or []
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """TODO."""
-        return [x for x in self.history if isinstance(x, UsageRecord)]
+        if self._chains:
+            return self._chains[-1](*args, **kwargs)
+        raise ValueError()
 
-    @property
-    def message_history(self) -> list[UsageRecord]:
+    def append(self, chain: Chain) -> None:
         """TODO."""
-        return [x for x in self.history if isinstance(x, MessageRecord)]
+        self._chains.append(chain)
+
+    def __len__(self) -> int:
+        return len(self._chains)
 
     @property
-    def total_tokens(self) -> int | None:
-        """
-        Returns the total number of tokens used by the all models during the chain/object's
-        lifetime.
-
-        Returns `None` if none of the models knows how to count tokens.
-        """
-        records = self.usage_history
-        totals = [x.total_tokens for x in records if x.total_tokens]
-        if not totals:
-            return None
-        return sum(totals)
-
-    @property
-    def cost(self) -> float | None:
-        """
-        Returns the total number of cost used by the all models during the chain/object's
-        lifetime.
-
-        Returns `None` if none of the models knows how to count cost.
-        """
-        records = self.usage_history
-        totals = [x.cost for x in records if x.cost]
-        if not totals:
-            return None
-        return sum(totals)
+    def history(self) -> list[Record]:
+        """TODO."""
+        # for each history in chain, cycle through each link's history and add to the list of
+        # records if it hasn't already been added.
+        chains = [chain for chain in self._chains if chain.history]
+        # Edge-case: if the same model is used multiple times in the same chain or across different
+        # links (e.g. embedding
+        # model to embed documents and then embed query to search documents) then we can't loop
+        # through the chains because we'd be double-counting the history from those objects.
+        # we have to build up a history and include the objects if they aren't already
+        # to do this we'll use the uuid, and then sort by timestamp
+        unique_records = []
+        unique_uuids = set()
+        for chain in chains:
+            for record in chain.history:
+                if record.uuid not in unique_uuids:
+                    unique_records.append(record)
+                    unique_uuids |= {record.uuid}
+        return sorted(unique_records, key=lambda x: x.timestamp)
 
 
 def _has_history(obj: object) -> bool:

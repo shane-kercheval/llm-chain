@@ -4,11 +4,71 @@ A `chain` consists of `links`. Each link in the chain is a callable, which can b
 
 Additionally, each link can track its own history, including messages sent/received and token usage/costs, through a `history` property that returns a list of `Record` objects. A `chain` aggregates and propagates the history of any link that has a `history` property, making it convenient to analyze costs or explore intermediate steps in the chain.
 
-**Note: This package is tested on Python versions 3.10 and 3.11**
+Here's a simple example:
+
+- Ask the chat model a question ("What is the meaning of life?")
+- The model responds, and the response is sent to the next link, which creates and returns a new prompt indicating that the link's input (which is the output from the last link; i.e. the model's response) should be summarized in two sentences.
+- The new prompt is sent to the next link, which is the chat model, and the response is returned.
+
+```python
+from llm_chain.base import Chain
+from llm_chain.models import OpenAIChat
+
+chat_model = OpenAIChat(model_name='gpt-3.5-turbo')
+chain = Chain(links=[
+    chat_model,
+    lambda x: f"Summarize the following in two sentences: ```{x}```",
+    chat_model,
+])
+chain("What is the meaning of life?")
+```
+
+Response:
+
+```
+The meaning of life is a philosophical question that has been debated for centuries with no definitive answer. It varies depending on one's beliefs, values, and experiences and is ultimately a personal and subjective concept."
+```
+
+Total costs/tokens for all activity in the chain:
+
+```python
+print(f"Cost:   ${chain.cost:.4f}")
+print(f"Tokens: {chain.total_tokens:,}")
+```
+
+Output:
+
+```
+Cost:   $0.0007
+Tokens: 395
+```
+
+Message History:
+
+```python
+print(chain.message_history[0].prompt)
+print(chain.message_history[0].response)
+print(chain.message_history[1].prompt)
+print(chain.message_history[1].response)
+```
+
+Output:
+
+```
+What is the meaning of life?
+
+The meaning of life is a philosophical question that has been debated by scholars, theologians, and philosophers for centuries. There is no one definitive answer to this question, as it can vary depending on one's beliefs, values, and experiences. Some people believe that the meaning of life is to seek happiness, while others believe it is to fulfill a specific purpose or destiny. Ultimately, the meaning of life is a personal and subjective concept that each individual must determine for themselves.
+
+Summarize the following in two sentences: ```The meaning of life is a philosophical question that has been debated by scholars, theologians, and philosophers for centuries. There is no one definitive answer to this question, as it can vary depending on one's beliefs, values, and experiences. Some people believe that the meaning of life is to seek happiness, while others believe it is to fulfill a specific purpose or destiny. Ultimately, the meaning of life is a personal and subjective concept that each individual must determine for themselves.```
+
+The meaning of life is a philosophical question that has been debated for centuries with no definitive answer. It varies depending on one's beliefs, values, and experiences and is ultimately a personal and subjective concept.
+```
 
 ---
 
 # Installing
+
+**Note: This package is tested on Python versions 3.10 and 3.11**
 
 ```commandline
 pip install llm-chain
