@@ -75,7 +75,7 @@ def test_Value():  # noqa
     assert value('test') == 'test'
     assert value() == 'test'
 
-def test_chain():  # noqa
+def test_chain_propegation():  # noqa
     # test empty chain
     chain = Chain(links=[])
     assert chain() is None
