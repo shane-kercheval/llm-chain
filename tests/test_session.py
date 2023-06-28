@@ -31,6 +31,8 @@ def test_Session():  # noqa
     assert session.message_history == []
     assert session.cost is None
     assert session.total_tokens is None
+    assert session.prompt_tokens is None
+    assert session.response_tokens is None
     assert len(session) == 0
 
     session.append(chain=Chain(links=[]))
@@ -40,6 +42,8 @@ def test_Session():  # noqa
     assert session.message_history == []
     assert session.cost is None
     assert session.total_tokens is None
+    assert session.prompt_tokens is None
+    assert session.response_tokens is None
     assert len(session) == 1
 
     # test chain with a link that doesn't have a history property
@@ -50,6 +54,8 @@ def test_Session():  # noqa
     assert session.message_history == []
     assert session.cost is None
     assert session.total_tokens is None
+    assert session.prompt_tokens is None
+    assert session.response_tokens is None
     assert len(session) == 2
 
     record_a = UsageRecord(metadata={'id': 'record_a'}, total_tokens=None, cost=None)
@@ -66,6 +72,8 @@ def test_Session():  # noqa
         response='response',
         cost=0.5,
         total_tokens=103,
+        prompt_tokens=34,
+        response_tokens=53,
     )
 
     session.append(chain=Chain(links=[MockHistoricalUsageRecords(mock_id='mock_a')]))
@@ -77,6 +85,8 @@ def test_Session():  # noqa
     assert session.message_history == []
     assert session.cost is None
     assert session.total_tokens is None
+    assert session.prompt_tokens is None
+    assert session.response_tokens is None
     assert len(session) == 3
 
     # if we add the same record it should be ignored
@@ -88,6 +98,8 @@ def test_Session():  # noqa
     assert session.message_history == []
     assert session.cost is None
     assert session.total_tokens is None
+    assert session.prompt_tokens is None
+    assert session.response_tokens is None
     assert len(session) == 3
 
     return_value, mock_id = session(record_b)
@@ -98,6 +110,8 @@ def test_Session():  # noqa
     assert session.message_history == []
     assert session.cost == 0.01
     assert session.total_tokens == 100
+    assert session.prompt_tokens is None
+    assert session.response_tokens is None
     assert len(session) == 3
 
     # add record `e` out of order; later, ensure the correct order is returned
@@ -110,6 +124,8 @@ def test_Session():  # noqa
     assert session.message_history == [record_e]
     assert session.cost == 0.51
     assert session.total_tokens == 203
+    assert session.prompt_tokens == 34
+    assert session.response_tokens == 53
     assert len(session) == 4
 
     # adding the same record to a new link should not double-count
@@ -121,6 +137,8 @@ def test_Session():  # noqa
     assert session.message_history == [record_e]
     assert session.cost == 0.51
     assert session.total_tokens == 203
+    assert session.prompt_tokens == 34
+    assert session.response_tokens == 53
     assert len(session) == 4
 
     # add record `d` out of order; later, ensure the correct order is returned
@@ -132,6 +150,8 @@ def test_Session():  # noqa
     assert session.message_history == [record_e]
     assert session.cost == 0.51
     assert session.total_tokens == 203
+    assert session.prompt_tokens == 34
+    assert session.response_tokens == 53
     assert len(session) == 4
 
     # add record `c` out of order; c should be returned before d
@@ -143,4 +163,6 @@ def test_Session():  # noqa
     assert session.message_history == [record_e]
     assert session.cost == 0.51
     assert session.total_tokens == 203
+    assert session.prompt_tokens == 34
+    assert session.response_tokens == 53
     assert len(session) == 4

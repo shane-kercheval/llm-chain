@@ -147,7 +147,7 @@ def scrape_urls(search_results):
     - create a Document object
     """
     return [
-        Document(content=scrape_url(x['href']).replace('\n', ' '))
+        Document(content=re.sub(r'\s+', ' ', scrape_url(x['href'])))
         for x in search_results
     ]
 

@@ -372,13 +372,41 @@ class LinkAggregator(ABC):
     @property
     def cost(self) -> float | None:
         """
-        Returns the total number of cost used by the all models during the chain/object's
+        Returns the total cost used by the all models during the chain/object's
         lifetime.
 
         Returns `None` if none of the models knows how to count cost.
         """
         records = self.usage_history
         totals = [x.cost for x in records if x.cost]
+        if not totals:
+            return None
+        return sum(totals)
+
+    @property
+    def prompt_tokens(self) -> int | None:
+        """
+        Returns the total number of prompt tokens used by the all models during the chain/object's
+        lifetime.
+
+        Returns `None` if none of the models knows how to count tokens.
+        """
+        records = self.message_history
+        totals = [x.prompt_tokens for x in records if x.prompt_tokens]
+        if not totals:
+            return None
+        return sum(totals)
+
+    @property
+    def response_tokens(self) -> int | None:
+        """
+        Returns the total number of response tokens used by the all models during the
+        chain/object's lifetime.
+
+        Returns `None` if none of the models knows how to count tokens.
+        """
+        records = self.message_history
+        totals = [x.response_tokens for x in records if x.response_tokens]
         if not totals:
             return None
         return sum(totals)
