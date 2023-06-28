@@ -274,7 +274,7 @@ def test_OpenAIChat__MemoryBufferMessageWindow1():  # noqa
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
 
 def test_OpenAIChat__MemoryBufferTokenWindow():  # noqa
-    token_threshold = 80
+    token_threshold = 100
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(
         model_name=model_name,
