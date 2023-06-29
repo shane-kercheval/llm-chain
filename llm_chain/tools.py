@@ -123,14 +123,14 @@ class StackQuestion(BaseModel):
         return datetime.fromtimestamp(value)
 
 
-def _get_stack_overflow_answers(question_id: int, num_answers: int = 2) -> list[StackAnswer]:
+def _get_stack_overflow_answers(question_id: int, max_answers: int = 2) -> list[StackAnswer]:
     """For a given question_id on Stack Overflow, returns the top `num_answers`."""
     params = {
         "site": "stackoverflow",
         "key": os.getenv('STACK_OVERFLOW_KEY'),
         "filter": "withbody",  # Include the answer body in the response
         "sort": "votes",  # Sort answers by votes (highest first)
-        "pagesize": num_answers,  # Fetch only the top answers
+        "pagesize": max_answers,  # Fetch only the top answers
     }
     response = retry_handler()(
         requests.get,
@@ -142,7 +142,10 @@ def _get_stack_overflow_answers(question_id: int, num_answers: int = 2) -> list[
     return [StackAnswer(**x) for x in answers]
 
 
-def search_stack_overflow(query: str, num_results: int = 5) -> list[StackQuestion]:
+def search_stack_overflow(
+        query: str,
+        max_questions: int = 2,
+        max_answers: int = 2) -> list[StackQuestion]:
     """TODO."""
     params = {
         'site': 'stackoverflow',
@@ -150,7 +153,7 @@ def search_stack_overflow(query: str, num_results: int = 5) -> list[StackQuestio
         'intitle': query,
         'sort': 'relevance',
         'filter': 'withbody',  # Include the question body in the response
-        'pagesize': num_results,
+        'pagesize': max_questions,
         'page': 1,
     }
     response = retry_handler()(
@@ -164,5 +167,8 @@ def search_stack_overflow(query: str, num_results: int = 5) -> list[StackQuestio
 
     for question in questions:
         if question.answer_count > 0:
-            question.answers = _get_stack_overflow_answers(question_id=question.question_id)
+            question.answers = _get_stack_overflow_answers(
+                question_id=question.question_id,
+                max_answers=max_answers,
+            )
     return questions

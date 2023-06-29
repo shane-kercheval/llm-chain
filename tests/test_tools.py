@@ -316,8 +316,20 @@ def test_search_stack_overflow():  # noqa
     # TODO: I don't want to make the tests fail when running on github workflows or someone is
     # building locally; but approach this will silently skip tests which is not ideal
     if os.getenv('STACK_OVERFLOW_KEY', None):
-        results = search_stack_overflow(query="getting segmentation fault in linux")
+        # this question gets over 25K upvotes and has many answers; let's make sure we get the
+        # expected number of questions/answers
+        question = "Why is processing a sorted array faster than processing an unsorted array?"
+        results = search_stack_overflow(query=question, max_questions=1, max_answers=1)
         assert results
+        assert len(results) == 1
+        assert results[0].title == question
+        assert results[0].answer_count > 1
+        assert len(results[0].answers) == 1
+
+        question = "getting segmentation fault in linux"
+        results = search_stack_overflow(query=question, max_questions=2, max_answers=2)
+        assert results
+        assert len(results) > 1
         assert any(x for x in results if x.answer_count > 0)
 
         # make sure the function doesn't fail when there are no matches/results
