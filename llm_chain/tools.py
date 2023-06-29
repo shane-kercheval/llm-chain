@@ -1,6 +1,11 @@
 """TODO."""
+import os
 from itertools import islice
 import re
+import requests
+from datetime import datetime
+from pydantic import BaseModel, Field, validator
+from llm_chain.utilities import retry_handler
 from llm_chain.base import Document, HistoricalData, Record
 
 
@@ -82,3 +87,82 @@ class DuckDuckGoSearch(HistoricalData):
     def history(self) -> list[SearchRecord]:
         """TODO."""
         return self._history
+
+
+class StackAnswer(BaseModel):
+    """TODO."""
+
+    answer_id: int
+    is_accepted: bool
+    score: int
+    body: str
+    creation_date: int
+
+    @validator('creation_date')
+    def convert_to_datetime(cls, value: str) -> datetime:  # noqa: N805
+        """Convert from string to datetime."""
+        return datetime.fromtimestamp(value)
+
+
+class StackQuestion(BaseModel):
+    """TODO."""
+
+    question_id: int
+    score: int
+    creation_date: int
+    answer_count: int
+    title: str
+    link: str
+    body: str
+    content_license: str
+    answers: list[StackAnswer] = Field(default_factory=list)
+
+    @validator('creation_date')
+    def convert_to_datetime(cls, value: str) -> datetime:  # noqa: N805
+        """Convert from string to datetime."""
+        return datetime.fromtimestamp(value)
+
+
+def _get_stack_overflow_answers(question_id: int, num_answers: int = 2) -> list[StackAnswer]:
+    """For a given question_id on Stack Overflow, returns the top `num_answers`."""
+    params = {
+        "site": "stackoverflow",
+        "key": os.getenv('STACK_OVERFLOW_KEY'),
+        "filter": "withbody",  # Include the answer body in the response
+        "sort": "votes",  # Sort answers by votes (highest first)
+        "pagesize": num_answers,  # Fetch only the top answers
+    }
+    response = retry_handler()(
+        requests.get,
+        f"https://api.stackexchange.com/2.3/questions/{question_id}/answers",
+        params=params,
+    )
+    assert response.status_code == 200
+    answers = response.json().get('items', [])
+    return [StackAnswer(**x) for x in answers]
+
+
+def search_stack_overflow(query: str, num_results: int = 5) -> list[StackQuestion]:
+    """TODO."""
+    params = {
+        'site': 'stackoverflow',
+        'key': os.getenv('STACK_OVERFLOW_KEY'),
+        'intitle': query,
+        'sort': 'relevance',
+        'filter': 'withbody',  # Include the question body in the response
+        'pagesize': num_results,
+        'page': 1,
+    }
+    response = retry_handler()(
+        requests.get,
+        'https://api.stackexchange.com/2.3/search',
+        params=params,
+    )
+    assert response.status_code == 200
+    questions = response.json().get('items', [])
+    questions = [StackQuestion(**x) for x in questions]
+
+    for question in questions:
+        if question.answer_count > 0:
+            question.answers = _get_stack_overflow_answers(question_id=question.question_id)
+    return questions

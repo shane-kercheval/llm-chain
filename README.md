@@ -4,7 +4,7 @@ A `chain` consists of `links`. Each link in the chain is a callable, which can b
 
 Additionally, each link can track its own history, including messages sent/received and token usage/costs, through a `history` property that returns a list of `Record` objects. A `chain` aggregates and propagates the history of any link that has a `history` property, making it convenient to analyze costs or explore intermediate steps in the chain.
 
-Here's a simple example:
+Here's a simple example (scroll down for further examples and tutorials):
 
 - Ask the chat model a question ("What is the meaning of life?")
 - The model responds, and the response is sent to the next link, which creates and returns a new prompt indicating that the link's input (which is the output from the last link; i.e. the model's response) should be summarized in two sentences.
@@ -73,6 +73,11 @@ The meaning of life is a philosophical question that has been debated for centur
 ```commandline
 pip install llm-chain
 ```
+
+## API KEYs
+
+- Any classes that use OpenAI assume that the `OPENAI_API_KEY` environment variable is set to a valid OpenAI API key.
+- The `llm_chain.utils.search_stack_overflow()` function assumes that the `STACK_OVERFLOW_KEY` environment variable is set. You must create an account and app at [Stack Apps](https://stackapps.com/) and use the `key` that is generated (not the `secret`).
 
 ---
 
