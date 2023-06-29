@@ -31,7 +31,6 @@ class OpenAIEmbeddings(EmbeddingsModel):
             timeout: TODO
         """
         super().__init__()
-        self.cost_per_token = MODEL_COST_PER_TOKEN[model_name]
         self.model_name = model_name
         self.doc_prep = doc_prep
         self.timeout = timeout
@@ -55,6 +54,10 @@ class OpenAIEmbeddings(EmbeddingsModel):
         )
         return embeddings, metadata
 
+    @property
+    def cost_per_token(self) -> dict:
+        """TODO."""
+        return MODEL_COST_PER_TOKEN[self.model_name]
 
 class OpenAIChat(ChatModel):
     """
@@ -79,12 +82,11 @@ class OpenAIChat(ChatModel):
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self.cost_per_token = MODEL_COST_PER_TOKEN[model_name]
         self.memory_strategy = memory_strategy
         self.system_message = {'role': 'system', 'content': system_message}
-        self._previous_memory = None
         self.streaming_callback = streaming_callback
         self.timeout = timeout
+        self._previous_memory = None
 
     def _run(self, prompt: str) -> MessageRecord:
         """
@@ -163,3 +165,8 @@ class OpenAIChat(ChatModel):
             total_tokens=total_tokens,
             cost=cost,
         )
+
+    @property
+    def cost_per_token(self) -> dict:
+        """TODO."""
+        return MODEL_COST_PER_TOKEN[self.model_name]

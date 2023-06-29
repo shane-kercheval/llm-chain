@@ -391,6 +391,7 @@ def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
     assert non_streaming_chat.prompt_tokens == streaming_chat.prompt_tokens
     assert non_streaming_chat.response_tokens == streaming_chat.response_tokens
     assert non_streaming_chat.total_tokens == streaming_chat.total_tokens
+    assert non_streaming_chat.cost == streaming_chat.cost
 
 def test_EmbeddingsModel__called_with_different_types():  # noqa
     class MockEmbeddings(EmbeddingsModel):
@@ -686,3 +687,15 @@ def test_Records_to_string():  # noqa
     assert 'response: "response' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
     assert 'cost: $1.5' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
     assert 'total_tokens: 1,000' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
+
+def test_bug_where_costs_are_incorrect_after_changing_model_name_after_creation():  # noqa
+    """We can't set cost_per_token during object creation, because the model might change."""
+    model = OpenAIChat(model_name='gpt-3.5-turbo')
+    assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-3.5-turbo']
+    model.model_name = 'gpt-4'
+    assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-4']
+
+    model = OpenAIEmbeddings(model_name='gpt-3.5-turbo')
+    assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-3.5-turbo']
+    model.model_name = 'gpt-4'
+    assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-4']
