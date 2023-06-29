@@ -351,7 +351,7 @@ class LinkAggregator(ABC):
         return [x for x in self.history if isinstance(x, UsageRecord)]
 
     @property
-    def message_history(self) -> list[UsageRecord]:
+    def message_history(self) -> list[MessageRecord]:
         """TODO."""
         return [x for x in self.history if isinstance(x, MessageRecord)]
 
