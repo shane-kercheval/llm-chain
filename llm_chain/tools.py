@@ -126,7 +126,7 @@ class StackQuestion(BaseModel):
     body: str
     text: str | None
     markdown: str | None
-    content_license: str
+    content_license: str | None
     answers: list[StackAnswer] = Field(default_factory=list)
 
     def __init__(self, **data):  # noqa

@@ -83,7 +83,7 @@ class OpenAIChat(ChatModel):
         self.memory_strategy = memory_strategy
         self.system_message = {'role': 'system', 'content': system_message}
         self._previous_memory = None
-        self._streaming_callback = streaming_callback
+        self.streaming_callback = streaming_callback
         self.timeout = timeout
 
     def _run(self, prompt: str) -> MessageRecord:
@@ -111,7 +111,7 @@ class OpenAIChat(ChatModel):
             ]
         # add latest prompt to messages
         messages += [{'role': 'user', 'content': prompt}]
-        if self._streaming_callback:
+        if self.streaming_callback:
             response = retry_handler()(
                 openai.ChatCompletion.create,
                 model=self.model_name,
@@ -130,7 +130,7 @@ class OpenAIChat(ChatModel):
             for chunk in response:
                 delta = get_delta(chunk)
                 if delta:
-                    self._streaming_callback(StreamingRecord(response=delta))
+                    self.streaming_callback(StreamingRecord(response=delta))
                     response_message += delta
 
             prompt_tokens = num_tokens_from_messages(model_name=self.model_name, messages=messages)
