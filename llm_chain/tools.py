@@ -2,9 +2,11 @@
 import os
 from itertools import islice
 import re
+from bs4 import BeautifulSoup
 import requests
 from datetime import datetime
 from pydantic import BaseModel, Field, validator
+from markdownify import markdownify as html_to_markdown
 from llm_chain.utilities import retry_handler
 from llm_chain.base import Document, HistoricalData, Record
 
@@ -96,7 +98,15 @@ class StackAnswer(BaseModel):
     is_accepted: bool
     score: int
     body: str
+    text: str | None
+    markdown: str | None
     creation_date: int
+
+    def __init__(self, **data):  # noqa
+        super().__init__(**data)
+        self.text = BeautifulSoup(self.body, 'html.parser').get_text(separator=' ')
+        self.markdown = html_to_markdown(self.body)
+
 
     @validator('creation_date')
     def convert_to_datetime(cls, value: str) -> datetime:  # noqa: N805
@@ -114,8 +124,15 @@ class StackQuestion(BaseModel):
     title: str
     link: str
     body: str
+    text: str | None
+    markdown: str | None
     content_license: str
     answers: list[StackAnswer] = Field(default_factory=list)
+
+    def __init__(self, **data):  # noqa
+        super().__init__(**data)
+        self.text = BeautifulSoup(self.body, 'html.parser').get_text(separator=' ')
+        self.markdown = html_to_markdown(self.body)
 
     @validator('creation_date')
     def convert_to_datetime(cls, value: str) -> datetime:  # noqa: N805
@@ -123,14 +140,14 @@ class StackQuestion(BaseModel):
         return datetime.fromtimestamp(value)
 
 
-def _get_stack_overflow_answers(question_id: int, num_answers: int = 2) -> list[StackAnswer]:
+def _get_stack_overflow_answers(question_id: int, max_answers: int = 2) -> list[StackAnswer]:
     """For a given question_id on Stack Overflow, returns the top `num_answers`."""
     params = {
         "site": "stackoverflow",
         "key": os.getenv('STACK_OVERFLOW_KEY'),
         "filter": "withbody",  # Include the answer body in the response
         "sort": "votes",  # Sort answers by votes (highest first)
-        "pagesize": num_answers,  # Fetch only the top answers
+        "pagesize": max_answers,  # Fetch only the top answers
     }
     response = retry_handler()(
         requests.get,
@@ -142,7 +159,10 @@ def _get_stack_overflow_answers(question_id: int, num_answers: int = 2) -> list[
     return [StackAnswer(**x) for x in answers]
 
 
-def search_stack_overflow(query: str, num_results: int = 5) -> list[StackQuestion]:
+def search_stack_overflow(
+        query: str,
+        max_questions: int = 2,
+        max_answers: int = 2) -> list[StackQuestion]:
     """TODO."""
     params = {
         'site': 'stackoverflow',
@@ -150,7 +170,7 @@ def search_stack_overflow(query: str, num_results: int = 5) -> list[StackQuestio
         'intitle': query,
         'sort': 'relevance',
         'filter': 'withbody',  # Include the question body in the response
-        'pagesize': num_results,
+        'pagesize': max_questions,
         'page': 1,
     }
     response = retry_handler()(
@@ -164,5 +184,8 @@ def search_stack_overflow(query: str, num_results: int = 5) -> list[StackQuestio
 
     for question in questions:
         if question.answer_count > 0:
-            question.answers = _get_stack_overflow_answers(question_id=question.question_id)
+            question.answers = _get_stack_overflow_answers(
+                question_id=question.question_id,
+                max_answers=max_answers,
+            )
     return questions
