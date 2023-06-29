@@ -325,6 +325,20 @@ def test_search_stack_overflow():  # noqa
         assert results[0].title == question
         assert results[0].answer_count > 1
         assert len(results[0].answers) == 1
+        # check that the body of the question contains html but the text/markdown does not
+        assert '<p>' in results[0].body
+        assert len(results[0].body) > 100
+        assert '<p>' not in results[0].text
+        assert len(results[0].text) > 100
+        assert '<p>' not in results[0].markdown
+        assert len(results[0].markdown) > 100
+        # check that the body of the answer contains html but the text/markdown does not
+        assert '<p>' in results[0].answers[0].body
+        assert len(results[0].answers[0].body) > 100
+        assert '<p>' not in results[0].answers[0].text
+        assert len(results[0].answers[0].text) > 100
+        assert '<p>' not in results[0].answers[0].markdown
+        assert len(results[0].answers[0].markdown) > 100
 
         question = "getting segmentation fault in linux"
         results = search_stack_overflow(query=question, max_questions=2, max_answers=2)

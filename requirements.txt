@@ -4,6 +4,7 @@ coverage
 duckduckgo-search
 faker
 openai
+markdownify
 numpy
 pydantic
 pypirc

@@ -2,9 +2,11 @@
 import os
 from itertools import islice
 import re
+from bs4 import BeautifulSoup
 import requests
 from datetime import datetime
 from pydantic import BaseModel, Field, validator
+from markdownify import markdownify as html_to_markdown
 from llm_chain.utilities import retry_handler
 from llm_chain.base import Document, HistoricalData, Record
 
@@ -96,7 +98,15 @@ class StackAnswer(BaseModel):
     is_accepted: bool
     score: int
     body: str
+    text: str | None
+    markdown: str | None
     creation_date: int
+
+    def __init__(self, **data):  # noqa
+        super().__init__(**data)
+        self.text = BeautifulSoup(self.body, 'html.parser').get_text(separator=' ')
+        self.markdown = html_to_markdown(self.body)
+
 
     @validator('creation_date')
     def convert_to_datetime(cls, value: str) -> datetime:  # noqa: N805
@@ -114,8 +124,15 @@ class StackQuestion(BaseModel):
     title: str
     link: str
     body: str
+    text: str | None
+    markdown: str | None
     content_license: str
     answers: list[StackAnswer] = Field(default_factory=list)
+
+    def __init__(self, **data):  # noqa
+        super().__init__(**data)
+        self.text = BeautifulSoup(self.body, 'html.parser').get_text(separator=' ')
+        self.markdown = html_to_markdown(self.body)
 
     @validator('creation_date')
     def convert_to_datetime(cls, value: str) -> datetime:  # noqa: N805
