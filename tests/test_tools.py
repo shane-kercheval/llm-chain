@@ -1,6 +1,7 @@
 """tests llm_chain/tools.py."""
+import os
 from llm_chain.base import Document
-from llm_chain.tools import DuckDuckGoSearch, split_documents, scrape_url
+from llm_chain.tools import DuckDuckGoSearch, search_stack_overflow, split_documents, scrape_url
 
 
 def test_split_documents__preserve_words_false():  # noqa
@@ -308,3 +309,16 @@ def test_DuckDuckGoSearch():  # noqa
 def test_scrape_url():  # noqa
     text = scrape_url(url='https://example.com/')
     assert 'example' in text.lower()
+
+def test_search_stack_overflow():  # noqa
+    # not sure how to test this in a way that won't break if the response from stack overflow
+    # changes in the future
+    # TODO: I don't want to make the tests fail when running on github workflows or someone is
+    # building locally; but approach this will silently skip tests which is not ideal
+    if os.getenv('STACK_OVERFLOW_KEY', None):
+        results = search_stack_overflow(query="getting segmentation fault in linux")
+        assert results
+        assert any(x for x in results if x.answer_count > 0)
+
+        # make sure the function doesn't fail when there are no matches/results
+        assert search_stack_overflow(query="asdfasdfasdfasdflkasdfljsadlkfjasdlkfja") == []
