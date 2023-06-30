@@ -8,7 +8,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, validator
 from markdownify import markdownify as html_to_markdown
 from llm_chain.utilities import retry_handler
-from llm_chain.base import Document, HistoricalData, Record
+from llm_chain.base import Document, HistoricalData, Record, RequestError
 
 
 def split_documents(
@@ -50,11 +50,11 @@ def split_documents(
 
 def scrape_url(url: str) -> str:
     """TODO."""
-    # TODO: test
     import requests
     from bs4 import BeautifulSoup
     response = requests.get(url)
-    assert response.status_code == 200
+    if response.status_code != 200:  # let client decide what to do
+        raise RequestError(status_code=response.status_code, reason=response.reason)
     soup = BeautifulSoup(response.content, 'html.parser')
     return soup.get_text().strip()
 
@@ -154,7 +154,8 @@ def _get_stack_overflow_answers(question_id: int, max_answers: int = 2) -> list[
         f"https://api.stackexchange.com/2.3/questions/{question_id}/answers",
         params=params,
     )
-    assert response.status_code == 200
+    if response.status_code != 200:  # let client decide what to do
+        raise RequestError(status_code=response.status_code, reason=response.reason)
     answers = response.json().get('items', [])
     return [StackAnswer(**x) for x in answers]
 

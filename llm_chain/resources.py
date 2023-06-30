@@ -11,7 +11,7 @@ MODEL_COST_PER_TOKEN = {
 ####
 # Prompts
 ####
-PROMPT_TEMLATE__DOC_SEARCH_STUFF = \
+PROMPT_TEMPLATE__INCLUDE_DOCUMENTS = \
 """
 Answer the question at the end of the text as truthfully and accurately as possible, based on the following information provided.
 
@@ -23,5 +23,7 @@ Here is the information:
 
 Here is the question:
 
+```
 {{prompt}}
+```
 """  # noqa: E501
