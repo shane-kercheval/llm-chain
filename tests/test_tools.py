@@ -1,7 +1,10 @@
 """tests llm_chain/tools.py."""
 import os
-from llm_chain.base import Document
-from llm_chain.tools import DuckDuckGoSearch, search_stack_overflow, split_documents, scrape_url
+import pytest
+import requests
+from llm_chain.base import Document, RequestError
+from llm_chain.tools import DuckDuckGoSearch, _get_stack_overflow_answers, search_stack_overflow, \
+    split_documents, scrape_url
 
 
 def test_split_documents__preserve_words_false():  # noqa
@@ -310,6 +313,10 @@ def test_scrape_url():  # noqa
     text = scrape_url(url='https://example.com/')
     assert 'example' in text.lower()
 
+def test_scrape_url_404():  # noqa
+    with pytest.raises(RequestError):
+         scrape_url(url="https://example.com/asdf")
+
 def test_search_stack_overflow():  # noqa
     # not sure how to test this in a way that won't break if the response from stack overflow
     # changes in the future
@@ -348,3 +355,12 @@ def test_search_stack_overflow():  # noqa
 
         # make sure the function doesn't fail when there are no matches/results
         assert search_stack_overflow(query="asdfasdfasdfasdflkasdfljsadlkfjasdlkfja") == []
+
+def test_RequestError():  # noqa
+    response = requests.get("https://example.com/asdf")
+    assert RequestError(status_code=response.status_code, reason=response.reason)
+
+def test__get_stack_overflow_answers_404():  # noqa
+     if os.getenv('STACK_OVERFLOW_KEY', None):
+        with pytest.raises(RequestError):
+            _ = _get_stack_overflow_answers(question_id='asdf')

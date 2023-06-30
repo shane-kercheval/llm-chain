@@ -509,3 +509,11 @@ def _has_property(obj: object, property_name: str) -> bool:
     if inspect.isfunction(obj):
         return False
     return hasattr(obj, property_name)
+
+
+class RequestError(Exception):
+    """Class that wraps an error when using requests.get()."""
+
+    def __init__(self, status_code: int, reason: str) -> None:
+        self.status_code = status_code
+        self.reason = reason
