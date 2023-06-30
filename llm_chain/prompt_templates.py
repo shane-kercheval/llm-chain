@@ -5,7 +5,7 @@ So for example, if a template's job is to search for relevant documents, it's pr
 database when the object is created (not via __call__).
 """
 from llm_chain.base import DocumentIndex, EmbeddingsRecord, PromptTemplate
-from llm_chain.resources import PROMPT_TEMLATE__DOC_SEARCH_STUFF
+from llm_chain.resources import PROMPT_TEMPLATE__INCLUDE_DOCUMENTS
 
 
 class DocSearchTemplate(PromptTemplate):
@@ -33,7 +33,7 @@ class DocSearchTemplate(PromptTemplate):
         super().__init__()
         self._doc_index = doc_index
         self.n_docs = n_docs
-        self.template = template if template else PROMPT_TEMLATE__DOC_SEARCH_STUFF
+        self.template = template if template else PROMPT_TEMPLATE__INCLUDE_DOCUMENTS
         self.similar_docs = None
 
     def __call__(self, prompt: str) -> str:  # noqa
