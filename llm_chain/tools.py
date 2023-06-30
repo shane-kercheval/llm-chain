@@ -168,15 +168,16 @@ def search_stack_overflow(
     params = {
         'site': 'stackoverflow',
         'key': os.getenv('STACK_OVERFLOW_KEY'),
-        'intitle': query,
+        'q': query,
         'sort': 'relevance',
+        'order': 'desc',
         'filter': 'withbody',  # Include the question body in the response
         'pagesize': max_questions,
         'page': 1,
     }
     response = retry_handler()(
         requests.get,
-        'https://api.stackexchange.com/2.3/search',
+        'https://api.stackexchange.com/2.3/search/advanced',
         params=params,
     )
     assert response.status_code == 200
