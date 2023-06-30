@@ -143,15 +143,16 @@ class StackQuestion(BaseModel):
 def _get_stack_overflow_answers(question_id: int, max_answers: int = 2) -> list[StackAnswer]:
     """For a given question_id on Stack Overflow, returns the top `num_answers`."""
     params = {
-        "site": "stackoverflow",
-        "key": os.getenv('STACK_OVERFLOW_KEY'),
-        "filter": "withbody",  # Include the answer body in the response
-        "sort": "votes",  # Sort answers by votes (highest first)
-        "pagesize": max_answers,  # Fetch only the top answers
+        'site': 'stackoverflow',
+        'key': os.getenv('STACK_OVERFLOW_KEY'),
+        'filter': 'withbody',  # Include the answer body in the response
+        'sort': 'votes',  # Sort answers by votes (highest first)
+        'order': 'desc',
+        'pagesize': max_answers,  # Fetch only the top answers
     }
     response = retry_handler()(
         requests.get,
-        f"https://api.stackexchange.com/2.3/questions/{question_id}/answers",
+        f'https://api.stackexchange.com/2.3/questions/{question_id}/answers',
         params=params,
     )
     if response.status_code != 200:  # let client decide what to do
