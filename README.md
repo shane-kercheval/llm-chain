@@ -87,10 +87,13 @@ pip install llm-chain
 
 - [chains.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb)
 - [openai_chat.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/openai_chat.ipynb)
-- [tools.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/tools.ipynb)
 - [indexes.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/indexes.ipynb)
 - [prompt_templates.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/prompt_templates.ipynb)
 - [memory.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/memory.ipynb)
+- [duckduckgo-web-search.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/duckduckgo-web-search.ipynb)
+- [scraping-urls.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/scraping-urls.ipynb)
+- [splitting-documents.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/splitting-documents.ipynb)
+- [search-stack-overflow.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/search-stack-overflow.ipynb)
 
 
 ## Simple ChatGPT example - **no chaining**
