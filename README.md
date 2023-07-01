@@ -4,6 +4,21 @@ A `chain` consists of `links`. Each link in the chain is a callable, which can b
 
 Additionally, each link can track its own history, including messages sent/received and token usage/costs, through a `history` property that returns a list of `Record` objects. A `chain` aggregates and propagates the history of any link that has a `history` property, making it convenient to analyze costs or explore intermediate steps in the chain.
 
+# Installing
+
+**Note: This package is tested on Python versions 3.10 and 3.11**
+
+```commandline
+pip install llm-chain
+```
+
+## API KEYs
+
+- Any classes that use OpenAI assume that the `OPENAI_API_KEY` environment variable is set to a valid OpenAI API key.
+- The `llm_chain.utils.search_stack_overflow()` function assumes that the `STACK_OVERFLOW_KEY` environment variable is set. You must create an account and app at [Stack Apps](https://stackapps.com/) and use the `key` that is generated (not the `secret`).
+
+# Example 1
+
 Here's a simple example (scroll down for further examples and tutorials):
 
 - Ask the chat model a question ("What is the meaning of life?")
@@ -64,55 +79,7 @@ Summarize the following in two sentences: ```The meaning of life is a philosophi
 The meaning of life is a philosophical question that has been debated for centuries with no definitive answer. It varies depending on one's beliefs, values, and experiences and is ultimately a personal and subjective concept.
 ```
 
----
-
-# Installing
-
-**Note: This package is tested on Python versions 3.10 and 3.11**
-
-```commandline
-pip install llm-chain
-```
-
-## API KEYs
-
-- Any classes that use OpenAI assume that the `OPENAI_API_KEY` environment variable is set to a valid OpenAI API key.
-- The `llm_chain.utils.search_stack_overflow()` function assumes that the `STACK_OVERFLOW_KEY` environment variable is set. You must create an account and app at [Stack Apps](https://stackapps.com/) and use the `key` that is generated (not the `secret`).
-
----
-
-# Examples
-
-## Notebooks
-
-- [chains.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb)
-- [openai_chat.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/openai_chat.ipynb)
-- [indexes.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/indexes.ipynb)
-- [prompt_templates.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/prompt_templates.ipynb)
-- [memory.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/memory.ipynb)
-- [duckduckgo-web-search.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/duckduckgo-web-search.ipynb)
-- [scraping-urls.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/scraping-urls.ipynb)
-- [splitting-documents.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/splitting-documents.ipynb)
-- [search-stack-overflow.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/search-stack-overflow.ipynb)
-
-
-## Simple ChatGPT example - **no chaining**
-
-You can use the objects from llm-chain without a chain as well. Here's an example using the OpenAIChat model:
-
-```python
-from llm_chain.models import OpenAIChat
-model = OpenAIChat(model_name='gpt-3.5-turbo')
-model("What is the meaning of life?")
-```
-
-Response:
-
-```
-The meaning of life is a philosophical question that has been debated by scholars, theologians, and philosophers for centuries. There is no one definitive answer to this question, as it can vary depending on one's beliefs, values, and experiences. Some people believe that the meaning of life is to seek happiness, while others believe it is to fulfill a specific purpose or destiny. Ultimately, the meaning of life is a personal and subjective concept that each individual must determine for themselves.
-```
-
-## Using a Chain
+# Example 2
 
 Here's an example of using a chain to perform the following series of tasks:
 
