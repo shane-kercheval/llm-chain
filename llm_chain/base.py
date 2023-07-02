@@ -254,11 +254,17 @@ class ChatModel(LargeLanguageModel):
 
 
 class MemoryBuffer(ABC):
-    """TODO."""
+    """
+    Class that has logic to handle the memory (i.e. total context) of the messages sent to an
+    LLM.
+    """
 
     @abstractmethod
     def __call__(self, history: list[MessageRecord]) -> list[MessageRecord]:
-        """TODO."""
+        """
+        Takes the hisitory of messages and returns a modified/reduced list of messages based on the
+        memory strategy.
+        """
 
 
 class PromptTemplate(HistoricalUsageRecords):
@@ -271,7 +277,8 @@ class PromptTemplate(HistoricalUsageRecords):
 
     @abstractmethod
     def __call__(self, prompt: str) -> str:
-        """TODO."""
+        """Takes user inuput 
+         and returns a prompt to the LLM."""
 
     @property
     @abstractmethod
