@@ -277,13 +277,12 @@ class PromptTemplate(HistoricalUsageRecords):
 
     @abstractmethod
     def __call__(self, prompt: str) -> str:
-        """Takes user inuput 
-         and returns a prompt to the LLM."""
+        """Takes the original prompt (user inuput) and returns a modified prompt."""
 
     @property
     @abstractmethod
     def history(self) -> list[Record]:
-        """TODO."""
+        """Propagate any underlying history from e.g. embeddings models."""
 
 
 class DocumentIndex(HistoricalUsageRecords):
@@ -293,12 +292,13 @@ class DocumentIndex(HistoricalUsageRecords):
 
     A DocumentIndex should propagate any total_tokens or total_cost used by the underlying models
     (e.g. if it uses an EmbeddingModel), or return None if not applicable.
-
-    TODO: n_results can be passed during object initialization or when called/searched. The latter
-    takes priority.
     """
 
     def __init__(self, n_results: int = 3) -> None:
+        """
+        Args:
+            n_results: the number of search-results (from the document index) to return.
+        """
         super().__init__()
         self._n_results = n_results
 
