@@ -1,7 +1,7 @@
 """Contains models."""
 from collections.abc import Callable
 from llm_chain.base import ChatModel, Document, EmbeddingsRecord, EmbeddingsModel, MemoryBuffer, \
-    MessageRecord, StreamingRecord
+    MessageRecord, StreamingEvent
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 from llm_chain.utilities import num_tokens, num_tokens_from_messages, retry_handler
 
@@ -71,7 +71,7 @@ class OpenAIChat(ChatModel):
             temperature: float = 0,
             max_tokens: int = 2000,
             system_message: str = 'You are a helpful assistant.',
-            streaming_callback: Callable[[None], StreamingRecord] | None = None,
+            streaming_callback: Callable[[None], StreamingEvent] | None = None,
             memory_strategy: MemoryBuffer | None = None,
             timeout: int = 10,
             ) -> None:
@@ -132,7 +132,7 @@ class OpenAIChat(ChatModel):
             for chunk in response:
                 delta = get_delta(chunk)
                 if delta:
-                    self.streaming_callback(StreamingRecord(response=delta))
+                    self.streaming_callback(StreamingEvent(response=delta))
                     response_message += delta
 
             prompt_tokens = num_tokens_from_messages(model_name=self.model_name, messages=messages)

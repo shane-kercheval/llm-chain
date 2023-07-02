@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 
 class Record(BaseModel):
-    """TODO."""
+    """An object typically used to track the history of a task/link."""
 
     uuid: str = Field(default_factory=lambda: str(uuid4()))
     timestamp: str = Field(
@@ -21,14 +21,14 @@ class Record(BaseModel):
         return f"timestamp: {self.timestamp}; metadata: {self.metadata}"
 
 
-class StreamingRecord(Record):
-    """TODO."""
+class StreamingEvent(Record):
+    """An object that contains the information from a streaming event."""
 
     response: str
 
 
 class UsageRecord(Record):
-    """TODO."""
+    """Represents a record associated with token usage and/or costs."""
 
     total_tokens: int | None = None
     cost: float | None = None
@@ -40,7 +40,7 @@ class UsageRecord(Record):
 
 class MessageRecord(UsageRecord):
     """
-    A MessageMetaData is a single interaction with an LLM (i.e. a prompt and a response. It's used
+    A MessageMetaData is a single interaction with an LLM (i.e. a prompt and a response). It's used
     to capture additional information about that interaction such as the number of tokens used and
     the corresponding costs.
     """
@@ -59,11 +59,14 @@ class MessageRecord(UsageRecord):
 
 
 class EmbeddingsRecord(UsageRecord):
-    """TODO."""
+    """Record associated with an Embeddings request."""
 
 
 class Document(BaseModel):
-    """TODO."""
+    """
+    A document consist of content/text and metadata. It can represent anything from file, web-page,
+    or subset/chunk of a whole document.
+    """
 
     content: str
     metadata: dict | None
@@ -75,7 +78,7 @@ class HistoricalData(ABC):
     @property
     @abstractmethod
     def history(self) -> list[Record]:
-        """TODO."""
+        """A list of Records for tracking events (e.g. messages, requests, searches, etc.)."""
 
 
 class HistoricalUsageRecords(HistoricalData):
@@ -87,18 +90,18 @@ class HistoricalUsageRecords(HistoricalData):
     @property
     @abstractmethod
     def history(self) -> list[UsageRecord]:
-        """TODO."""
+        """A list of Records for tracking events (e.g. messages, requests, searches, etc.)."""
 
     @property
     def total_tokens(self) -> int | None:
-        """TODO."""
+        """The total number of tokens associated with the event."""
         if self.history and self.history[0].total_tokens is not None:
             return sum(x.total_tokens for x in self.history)
         return None
 
     @property
     def cost(self) -> float | None:
-        """TODO."""
+        """The total cost associated with the event."""
         if self.history and self.history[0].cost is not None:
             return sum(x.cost for x in self.history)
         return None
@@ -116,16 +119,16 @@ class LargeLanguageModel(HistoricalUsageRecords):
 
     @abstractmethod
     def __call__(self, value: object) -> object:
-        """TODO."""
+        """Executes the chat request based on the value (e.g. message(s)) passed in."""
 
     @property
     @abstractmethod
     def history(self) -> list[Record]:
-        """TODO."""
+        """A list of Records for tracking chat messages (e.g. prompt/response)."""
 
 
 class EmbeddingsModel(LargeLanguageModel):
-    """TODO."""
+    """A model that produces embeddings for a given piece of text."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -133,10 +136,17 @@ class EmbeddingsModel(LargeLanguageModel):
 
     @abstractmethod
     def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsRecord]:
-        """TODO."""
+        """Execute the embeddings request."""
 
     def __call__(self, docs: list[Document] | list[str] | Document | str) -> list[list[float]]:
-        """TODO."""
+        """
+        Executes the embeddings request based on the document(s).
+
+        Args:
+            docs:
+                Either a list of Documents, single Document, or str. Returns the embeddings that
+                correspond to the doc(s).
+        """
         if not docs:
             return []
         if isinstance(docs, list):
@@ -157,7 +167,7 @@ class EmbeddingsModel(LargeLanguageModel):
 
     @property
     def history(self) -> list[EmbeddingsRecord]:
-        """TODO."""
+        """A list of EmbeddingsRecord that correspond to each embeddings request."""
         return self._history
 
 
@@ -180,7 +190,7 @@ class ChatModel(LargeLanguageModel):
 
     def __call__(self, prompt: str) -> str:
         """
-        When the object is called it takes a prompt (string) and returns a response (string).
+        Executes the chat request based on the the prompt (string) and returns a response (string).
 
         Args:
             prompt: the string prompt/question to the model.
@@ -191,7 +201,7 @@ class ChatModel(LargeLanguageModel):
 
     @property
     def history(self) -> list[MessageRecord]:
-        """TODO."""
+        """A list of MessageRecord for tracking chat messages (prompt/response)."""
         return self._history
 
     @property

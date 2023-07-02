@@ -1,7 +1,7 @@
 """tests llm_chain/models.py."""
 import pytest
 from llm_chain.base import Document, EmbeddingsModel, EmbeddingsRecord, MessageRecord, Record, \
-    StreamingRecord, UsageRecord
+    StreamingEvent, UsageRecord
 from llm_chain.models import OpenAIChat, OpenAIEmbeddings
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 from tests.conftest import MockChat, MockRandomEmbeddings
@@ -262,7 +262,7 @@ def test_OpenAIChat():  # noqa
 def test_OpenAIChat_streaming():  # noqa
     """Test the same thing as above but for streaming. All usage and history should be the same."""
     callback_response = ''
-    def streaming_callback(record: StreamingRecord) -> None:
+    def streaming_callback(record: StreamingEvent) -> None:
         nonlocal callback_response
         callback_response += record.response
 
@@ -376,7 +376,7 @@ def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
     non_streaming_response = non_streaming_chat(question)
 
     callback_response = ''
-    def streaming_callback(record: StreamingRecord) -> None:
+    def streaming_callback(record: StreamingEvent) -> None:
         nonlocal callback_response
         callback_response += record.response
 
