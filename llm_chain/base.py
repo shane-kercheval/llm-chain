@@ -306,7 +306,24 @@ class DocumentIndex(HistoricalUsageRecords):
             self,
             value: Document | str | list[Document],
             n_results: int | None = None) -> list[Document] | None:
-        """TODO."""
+        """
+        When the object is called, either the `add` method will be called (if the `value` passed
+        in is a list) or the `search` method iwll be called (if the `value` passed in is a string
+        or Document). This functionality allows to object to be added to a chain and either add
+        documents to the index or search for documents based on input.
+
+        Args:
+            value:
+                The value to be passed to the call method. See description above.
+            n_results:
+                The maximum number of results to return. If provided, it will override
+                `self.n_results`.
+
+        Returns:
+            If `value` is a list (and the `add` function is called), this method returns None.
+            If `value` is a string or Document (and the `search` function) is called, this method
+            will return the serach results
+        """
         if isinstance(value, list):
             return self.add(docs=value)
         if isinstance(value, Document | str):
