@@ -49,11 +49,14 @@ def split_documents(
 
 
 def scrape_url(url: str) -> str:
-    """TODO."""
-    import requests
-    from bs4 import BeautifulSoup
+    """
+    Scrapes the content of a given URL and returns it as a string.
+
+    Args:
+        url: The URL to scrape.
+    """
     response = requests.get(url)
-    if response.status_code != 200:  # let client decide what to do
+    if response.status_code != 200:
         raise RequestError(status_code=response.status_code, reason=response.reason)
     soup = BeautifulSoup(response.content, 'html.parser')
     return soup.get_text().strip()

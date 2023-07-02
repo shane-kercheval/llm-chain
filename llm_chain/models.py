@@ -100,12 +100,13 @@ class OpenAIChat(ChatModel):
         should not change though;
         """
         import openai
-        # initial message
-        messages = [self.system_message]
         # build up messages from history
-        memory = self._history.copy()
+        memory = self.history.copy()
         if self.memory_strategy:
             memory = self.memory_strategy(history=memory)
+
+        # initial message; always keep system message regardless of memory_strategy
+        messages = [self.system_message]
         for message in memory:
             messages += [
                 {'role': 'user', 'content': message.prompt},
