@@ -1,4 +1,9 @@
-"""TODO."""
+"""
+An index is a data structure or mechanism used to facilitate efficient retrieval of specific
+information from a larger collection or database. One example of an index is a document index,
+which stores/retrieves documents (i.e. text with metadata). One implementation of a document index
+is ChromaDB which stores/retrieves documents based on embeddings, which allow for semantic search.
+"""
 import chromadb
 from chromadb.api.models.Collection import Collection
 from llm_chain.base import Document, DocumentIndex, EmbeddingsModel, EmbeddingsRecord
@@ -6,7 +11,19 @@ from llm_chain.utilities import create_hash
 
 
 class ChromaDocumentIndex(DocumentIndex):
-    """TODO."""
+    """
+    Chroma is a document index (vector database) that which provides a way to store embeddings
+    associated with Document objects and then retrieve the documents that are most similar to
+    another set of embeddings (or corresponding string).
+    embeddings.
+
+    The `ChromaDocumentIndex` class is a wrapper around Chroma that makes it easy to work with in
+    a chain. When the `ChromaDocumentIndex` object is called (via __call__), either the `add`
+    method will be called (if the `value` passed in is a list) or the `search` method will be
+    called (if the `value` passed in is a string or Document).
+    This functionality allows to object to be added to a chain and either add documents to the
+    index or search for document in the index based on input.
+    """
 
     def __init__(
             self,
@@ -18,7 +35,7 @@ class ChromaDocumentIndex(DocumentIndex):
         self._emb_model = embeddings_model
 
     def add(self, docs: list[Document]) -> None:
-        """TODO."""
+        """Add documents to the underlying Chroma index/database."""
         if not docs:
             return
         existing_ids = set(self._collection.get(include=['documents'])['ids'])
@@ -44,6 +61,7 @@ class ChromaDocumentIndex(DocumentIndex):
             )
 
     def _search(self, doc: Document, n_results: int) -> list[Document]:
+        """Search for documents in the underlying Chroma index/database based on `doc`."""
         if self._emb_model:
             embeddings = self._emb_model(docs=doc)
             results = self._collection.query(
@@ -70,5 +88,5 @@ class ChromaDocumentIndex(DocumentIndex):
 
     @property
     def history(self) -> list[EmbeddingsRecord]:
-        """TODO."""
+        """Propagates the history of any underlying models (e.g. embeddings model)."""
         return self._emb_model.history if self._emb_model else None

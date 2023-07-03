@@ -309,7 +309,7 @@ class DocumentIndex(HistoricalUsageRecords):
             n_results: int | None = None) -> list[Document] | None:
         """
         When the object is called, either the `add` method will be called (if the `value` passed
-        in is a list) or the `search` method iwll be called (if the `value` passed in is a string
+        in is a list) or the `search` method will be called (if the `value` passed in is a string
         or Document). This functionality allows to object to be added to a chain and either add
         documents to the index or search for documents based on input.
 
@@ -337,7 +337,7 @@ class DocumentIndex(HistoricalUsageRecords):
 
     @abstractmethod
     def _search(self, doc: Document, n_results: int) -> list[Document]:
-        """Search for documents in the underlying index/database."""
+        """Search for documents in the underlying index/database based on `doc."""
 
     def search(
             self,
@@ -360,7 +360,7 @@ class DocumentIndex(HistoricalUsageRecords):
     @property
     @abstractmethod
     def history(self) -> list[Record]:
-        """Propagate the history of any underlying models (e.g. embeddings model)."""
+        """Propagates the history of any underlying models (e.g. embeddings model)."""
 
 
 class Value:
