@@ -1,11 +1,12 @@
 """Contains base classes."""
 from abc import ABC, abstractmethod
-import inspect
 from typing import Any
 from collections.abc import Callable
 from uuid import uuid4
 from datetime import datetime
 from pydantic import BaseModel, Field
+
+from llm_chain.utilities import has_property
 
 
 class Record(BaseModel):
@@ -568,23 +569,15 @@ class Session(LinkAggregator):
                     unique_uuids |= {record.uuid}
         return sorted(unique_records, key=lambda x: x.timestamp)
 
-
 def _has_history(obj: object) -> bool:
     """
     For a given object `obj`, return True if that object has a `history` property and if the
     history property has any Record objects.
     """
-    return _has_property(obj, property_name='history') and \
+    return has_property(obj, property_name='history') and \
         isinstance(obj.history, list) and \
         len(obj.history) > 0 and \
         isinstance(obj.history[0], Record)
-
-
-def _has_property(obj: object, property_name: str) -> bool:
-    """Returns True if the object has a property with the name `property_name`."""
-    if inspect.isfunction(obj):
-        return False
-    return hasattr(obj, property_name)
 
 
 class RequestError(Exception):

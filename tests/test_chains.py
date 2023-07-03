@@ -1,7 +1,8 @@
 """TODO."""
 from time import sleep
 from llm_chain.base import Document, HistoricalUsageRecords, MessageRecord, Record, UsageRecord, \
-    Chain, _has_property, Value
+    Chain, Value
+from llm_chain.utilities import has_property
 from tests.conftest import MockChat, MockRandomEmbeddings
 
 
@@ -109,10 +110,10 @@ def test_chain_index_len():  # noqa
 def test_has_property():  # noqa
     chat = MockChat()
     lambda_func = lambda x: x  # noqa
-    assert _has_property(obj=chat, property_name='total_tokens')
-    assert not _has_property(obj=lambda_func, property_name='total_tokens')
-    assert not _has_property(obj=chat, property_name='does_not_have')
-    assert not _has_property(obj=lambda_func, property_name='does_not_have')
+    assert has_property(obj=chat, property_name='total_tokens')
+    assert not has_property(obj=lambda_func, property_name='total_tokens')
+    assert not has_property(obj=chat, property_name='does_not_have')
+    assert not has_property(obj=lambda_func, property_name='does_not_have')
 
 def test_history():  # noqa
     mock_records = MockRecords()
