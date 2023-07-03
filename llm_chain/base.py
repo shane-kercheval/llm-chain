@@ -314,10 +314,10 @@ class DocumentIndex(HistoricalUsageRecords):
 
         Args:
             value:
-                The value to be passed to the call method. See description above.
+                Similar Documents will be returned based on this value. See description above.
             n_results:
                 The maximum number of results to return. If provided, it will override
-                `self.n_results`.
+                `n_results` based to `__init__`.
 
         Returns:
             If `value` is a list (and the `add` function is called), this method returns None.
@@ -345,8 +345,12 @@ class DocumentIndex(HistoricalUsageRecords):
         """
         Search for documents in the underlying index/database.
 
-        TODO: n_results can be passed during object initialization or when called/searched.
-        The latter takes priority.
+        Args:
+            value:
+                Similar Documents will be returned based on this value.
+            n_results:
+                The maximum number of results to return. If provided, it will override
+                `n_results` based to `__init__`.
         """
         if isinstance(value, str):
             value = Document(content=value)
@@ -355,38 +359,49 @@ class DocumentIndex(HistoricalUsageRecords):
     @property
     @abstractmethod
     def history(self) -> list[Record]:
-        """TODO."""
+        """Propagate the history of any underlying models (e.g. embeddings model)."""
 
 
 class Value:
-    """TODO."""
+    """
+    The Value class serves as a convenient caching mechanism within the chain. The `Value` object
+    is callable, allowing it to cache and return the value when provided as an argument. When
+    called without a value, it retrieves and returns the cached value.
+    """
 
     def __init__(self):
         self.value = None
 
     def __call__(self, value: object | None = None) -> object:
-        """TODO."""
+        """
+        When provided a `value` that value is cached and returned.
+        When no `value` is provided, the previously cached value is returned (or None if no value
+        has been cached).
+        """
         if value:
             self.value = value
         return self.value
 
 
 class LinkAggregator(ABC):
-    """TODO."""
+    """
+    A LinkAggregator (e.g. a Chain) is an object that aggregates the usage/costs across all objects
+    associated with the object (e.g. across all links).
+    """
 
     @property
     @abstractmethod
     def history(self) -> list[Record]:
-        """TODO."""
+        """A list of Record objects tracking important records/events."""
 
     @property
     def usage_history(self) -> list[UsageRecord]:
-        """TODO."""
+        """Returns all records of type UsageRecord."""
         return [x for x in self.history if isinstance(x, UsageRecord)]
 
     @property
     def message_history(self) -> list[MessageRecord]:
-        """TODO."""
+        """Returns all records of type MessageRecord."""
         return [x for x in self.history if isinstance(x, MessageRecord)]
 
     @property
@@ -447,13 +462,33 @@ class LinkAggregator(ABC):
 
 
 class Chain(LinkAggregator):
-    """TODO."""
+    """
+    A `chain` consists of `links`. Each link in the chain is a callable, which can be either a
+    function or an object that implements the `__call__` method.
+
+    The output of one link serves as the input to the next link in the chain.
+
+    Additionally, each link can track its own history, including messages sent/received and token
+    usage/costs, through a `history` property that returns a list of `Record` objects. A `chain`
+    aggregates and propagates the history of any link that has a `history` property, making it
+    convenient to analyze costs or explore intermediate steps in the chain.
+    """
 
     def __init__(self, links: list[Callable[[Any], Any]]):
         self._links = links
 
+    def __getitem__(self, index: int) -> Callable:
+        return self._links[index]
+
+    def __len__(self) -> int:
+        return len(self._links)
+
     def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
-        """TODO."""
+        """
+        Executes the chain by passing the value provided to the first link. The output of the first
+        link is passed as the input of the next link, which continues until all of the links in
+        the Chain have executed. The output from the last link is returned.
+        """
         if not self._links:
             return None
         result = self._links[0](*args, **kwargs)
@@ -462,15 +497,13 @@ class Chain(LinkAggregator):
                 result = link(result)
         return result
 
-    def __getitem__(self, index: int) -> Callable:
-        return self._links[index]
-
-    def __len__(self) -> int:
-        return len(self._links)
-
     @property
     def history(self) -> list[Record]:
-        """TODO."""
+        """
+        Aggregates the `history` across all links in the Chain. It ensures that if a link is
+        added multiple times to the Chain (e.g. a chat model with multiple steps) that the
+        underlying Record objects associated with that link's `history` are not duplicated.
+        """
         histories = [link.history for link in self._links if _has_history(link)]
         # Edge-case: if the same model is used multiple times in the same chain (e.g. embedding
         # model to embed documents and then embed query to search documents) then we can't loop
@@ -489,8 +522,9 @@ class Chain(LinkAggregator):
 
 class Session(LinkAggregator):
     """
-    TODO: A session is a way to aggregate the history of chains, calling a session will call
-    the last chain added to the session.
+    A Session is a way to aggregate multiple Chain objects. For example, if chains are dynamically
+    created based on user input, then we need a way to track all of the Chains within the same
+    session. Calling a Session will call the last chain added to the session.
     """
 
     def __init__(self, chains: list[Chain] | None = None):
@@ -511,7 +545,11 @@ class Session(LinkAggregator):
 
     @property
     def history(self) -> list[Record]:
-        """TODO."""
+        """
+        Aggregates the `history` across all Chains in the session. It ensures that if the same
+        object (e.g. chat model) is added multiple times to the Session, that the underlying Record
+        objects associated with that object's `history` are not duplicated.
+        """
         # for each history in chain, cycle through each link's history and add to the list of
         # records if it hasn't already been added.
         chains = [chain for chain in self._chains if chain.history]
@@ -532,7 +570,10 @@ class Session(LinkAggregator):
 
 
 def _has_history(obj: object) -> bool:
-    """TODO."""
+    """
+    For a given object `obj`, return True if that object has a `history` property and if the
+    history property has any Record objects.
+    """
     return _has_property(obj, property_name='history') and \
         isinstance(obj.history, list) and \
         len(obj.history) > 0 and \
@@ -540,6 +581,7 @@ def _has_history(obj: object) -> bool:
 
 
 def _has_property(obj: object, property_name: str) -> bool:
+    """Returns True if the object has a property with the name `property_name`."""
     if inspect.isfunction(obj):
         return False
     return hasattr(obj, property_name)
