@@ -83,6 +83,8 @@ Summarize the following in two sentences: ```The meaning of life is a philosophi
 The meaning of life is a philosophical question that has been debated for centuries with no definitive answer. It varies depending on one's beliefs, values, and experiences and is ultimately a personal and subjective concept.
 ```
 
+Notice in the message history above (which is sent to the OpenAI model), that in the second link (the line with the lambda function) we don't actually have to use the response (`x` in lambda) since it's already in the history. I simply did that for illustrative purposes. We could replace the second link with `lambda _: "Summarize your previous answer in two sentences."`, which ignores the ouput of the first link (i.e. first response from chat model) and would actually reduce the number of tokens we use since we aren't passing the previous response in the new message. See the [chains.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) notebook for a full example.
+
 ---
 
 # Example 2
