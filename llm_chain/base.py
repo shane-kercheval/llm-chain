@@ -532,13 +532,20 @@ class Session(LinkAggregator):
         self._chains = chains or []
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
-        """TODO."""
+        """
+        Calls/starts the chain that was the last added to the session, passing in the corresponding
+        arguments.
+        """
         if self._chains:
             return self._chains[-1](*args, **kwargs)
         raise ValueError()
 
     def append(self, chain: Chain) -> None:
-        """TODO."""
+        """
+        Add/append a new `chain` to the list of chains in the session. If the session object is
+        called (i.e. __call__), the session will foroward the call to the new chain object (i.e.
+        the last chain added in the list).
+        """
         self._chains.append(chain)
 
     def __len__(self) -> int:
