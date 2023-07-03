@@ -8,8 +8,10 @@ from llm_chain.utilities import num_tokens, num_tokens_from_messages, retry_hand
 
 class OpenAIEmbeddings(EmbeddingsModel):
     """
-    Input: list of documents
-    Output: list of documents with embeddings.
+    Wrapper around the OpenAI Embeddings model. When the object is called with a list of Document
+    objects, it returns a tuple containing the embeddings (which is a lists where each item
+    corresponds with a Document and is the embedding (list of floats)) and an `EmbeddingsRecord`
+    object which tracks costs and other metadata.
     """
 
     def __init__(
@@ -19,16 +21,13 @@ class OpenAIEmbeddings(EmbeddingsModel):
             timeout: int = 10,
             ) -> None:
         """
-        TODO.
-
-        NOTE: TODO: cleanup explaination; running this on docs creates side effect and populates
-        .embedding property and returns the same list of objects
-
         Args:
-            model_name: e.g. 'text-embedding-ada-002'
+            model_name:
+                e.g. 'text-embedding-ada-002'
             doc_prep:
                 function that cleans the text of each doc before creating embeddings.
-            timeout: TODO
+            timeout:
+                timeout value passed to OpenAI model.
         """
         super().__init__()
         self.model_name = model_name
@@ -61,8 +60,8 @@ class OpenAIEmbeddings(EmbeddingsModel):
 
 class OpenAIChat(ChatModel):
     """
-    Input: prompt/query (string).
-    Output: the response (string).
+    Wrapper around the OpenAI chat model (i.e. https://api.openai.com/v1/chat/completions
+    endpoint). More info here: https://platform.openai.com/docs/api-reference/chat.
     """
 
     def __init__(
@@ -71,11 +70,34 @@ class OpenAIChat(ChatModel):
             temperature: float = 0,
             max_tokens: int = 2000,
             system_message: str = 'You are a helpful assistant.',
-            streaming_callback: Callable[[None], StreamingEvent] | None = None,
-            memory_strategy: MemoryBuffer | None = None,
+            streaming_callback: Callable[[StreamingEvent], None] | None = None,
+            memory_strategy: MemoryBuffer | Callable[[list[MessageRecord]], list[MessageRecord]] | None = None,  # noqa: E501
             timeout: int = 10,
             ) -> None:
-        """TODO."""
+        """
+        Args:
+            model_name:
+                e.g. 'gpt-3.5-turbo'
+            temperature:
+                "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will
+                make the output more random, while lower values like 0.2 will make it more focused
+                and deterministic."
+            max_tokens:
+                The maximum number of tokens to generate in the chat completion.
+                The total length of input tokens and generated tokens is limited by the model's
+                context length.
+            system_message:
+                The content of the message associated with the "system" `role`.
+            streaming_callback:
+                Callable that takes a StreamingEvent object, which contains the streamed token (in
+                the `response` property and perhaps other metadata.
+            memory_strategy:
+                MemoryBuffer object (or callable that takes a list of MessageRecord objects and
+                returns a list of MessageRecord objects. The underlying logic should return the
+                messages sent to the OpenAI model.
+            timeout:
+                timeout value passed to OpenAI model.
+        """
         # TODO: doc string model_name e.g. 'gpt-3.5-turbo'
         # copied from https://github.com/hwchase17/langchain/blob/master/langchain/callbacks/openai_info.py
         super().__init__()
@@ -96,8 +118,8 @@ class OpenAIChat(ChatModel):
         it's own logic. The `system_message` is always the first message regardless if a
         `memory_strategy` is passed in.
 
-        TODO: explain callback; passing in callback results in turning streaming on; end response
-        should not change though;
+        The use of a streaming callback does not change the output returned from calling the object
+        (i.e. a MessageRecord object).
         """
         import openai
         # build up messages from history
@@ -124,6 +146,9 @@ class OpenAIChat(ChatModel):
                 timeout=self.timeout,
                 stream=True,
             )
+            # extract the content/token from the streaming response and send to the callback
+            # build up the message so that we can calculate usage/costs and send back the same
+            # MessageRecord response that we would return if we weren't streaming
             def get_delta(chunk):  # noqa
                 delta = chunk['choices'][0]['delta']
                 if 'content' in delta:
@@ -169,5 +194,10 @@ class OpenAIChat(ChatModel):
 
     @property
     def cost_per_token(self) -> dict:
-        """TODO."""
+        """
+        Returns a dictionary containing 'input' and 'output' keys each containing a float
+        corresponding to the cost per token for the corresponding token type and model.
+        We need to dynamically look this up since the model_name can change over the course of the
+        object's lifetime.
+        """
         return MODEL_COST_PER_TOKEN[self.model_name]

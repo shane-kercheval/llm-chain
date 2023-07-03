@@ -43,12 +43,12 @@ class Timer:
         raise ValueError("Only suppports seconds.")
 
 
-def create_hash(string_value: str) -> str:
-    """TODO."""
+def create_hash(value: str) -> str:
+    """Based on `value`, returns a hash."""
     # Create a new SHA-256 hash object
     hash_object = hashlib.sha256()
     # Convert the string value to bytes and update the hash object
-    hash_object.update(string_value.encode('utf-8'))
+    hash_object.update(value.encode('utf-8'))
     # Get the hexadecimal representation of the hash
     return hash_object.hexdigest()
 
