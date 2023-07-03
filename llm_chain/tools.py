@@ -1,4 +1,4 @@
-"""TODO."""
+"""Contains misc tools that can be used within a Chain."""
 import os
 from itertools import islice
 import re
@@ -15,7 +15,19 @@ def split_documents(
         docs: list[Document],
         max_chars: int = 500,
         preserve_words: bool = True) -> list[Document]:
-    """TODO. Mention that it keeps the entire word. Does not return empty documents."""
+    """
+    split_documents divides a list of documents into smaller segments based on the specified
+    maximum character limit for each individual Document object.
+
+    Args:
+        docs:
+            A list of Document objects to be segmented.
+        max_chars:
+            The maximum allowable character count for each Document object.
+        preserve_words:
+            If set to True, guarantees that the document segmentation does not occur in the middle
+            of a word, ensuring the integrity of the entire word.
+    """
     new_docs = []
     for doc in docs:
         if doc.content:
@@ -63,21 +75,27 @@ def scrape_url(url: str) -> str:
 
 
 class SearchRecord(Record):
-    """TODO."""
+    """Contains the search-query and search-requests (e.g. from a web-search)."""
 
     query: str
     results: list[dict]
 
 
 class DuckDuckGoSearch(HistoricalData):
-    """TODO."""
+    """
+    A wrapper around DuckDuckGo web search. The object is called with a query and returns a list of
+    SearchRecord objects associated with the top search results.
+    """
 
     def __init__(self, top_n: int = 3):
         self.top_n = top_n
         self._history = []
 
     def __call__(self, query: str) -> list[dict]:
-        """TODO."""
+        """
+        The object is called with a query and returns a list of SearchRecord objects associated
+        with the `top_n` search results. `top_n` is set during object initialization.
+        """
         from duckduckgo_search import DDGS
         with DDGS() as ddgs:
             ddgs_generator = ddgs.text(query, region='wt-wt', safesearch='Off', timelimit='y')
@@ -90,12 +108,18 @@ class DuckDuckGoSearch(HistoricalData):
 
     @property
     def history(self) -> list[SearchRecord]:
-        """TODO."""
+        """A history of web-searches (list of SearchResult objects)."""
         return self._history
 
 
 class StackAnswer(BaseModel):
-    """TODO."""
+    """
+    An object that encapsulates the contents of a Stack Overflow answer.
+
+    The body property holds the original answer in HTML format. The text property provides the
+    same content with HTML tags removed, while the markdown property offers the content converted
+    to Markdown format.
+    """
 
     answer_id: int
     is_accepted: bool
@@ -118,7 +142,13 @@ class StackAnswer(BaseModel):
 
 
 class StackQuestion(BaseModel):
-    """TODO."""
+    """
+    An object that encapsulates the contents of a Stack Overflow question.
+
+    The body property holds the original question in HTML format. The text property provides the
+    same content with HTML tags removed, while the markdown property offers the content converted
+    to Markdown format.
+    """
 
     question_id: int
     score: int
@@ -168,7 +198,24 @@ def search_stack_overflow(
         query: str,
         max_questions: int = 2,
         max_answers: int = 2) -> list[StackQuestion]:
-    """TODO."""
+    """
+    Retrieves the top relevant Stack Overflow questions based on a given search query.
+    The function assumes that the STACK_OVERFLOW_KEY environment variable is properly set and
+    contains a valid Stack Overflow API key.
+
+    To obtain an API key, please create an account and an app at [Stack Apps](https://stackapps.com/).
+    Use the `key` generated for your app (not the `secret`).
+
+    Args:
+        query:
+            The search query used to find relevant Stack Overflow questions.
+        max_questions:
+            The maximum number of questions to be returned. If the API doesn't find enough relevant
+            questions, fewer questions may be returned.
+        max_answers:
+            The maximum number of answers to be returned with each question. If the number of
+            answers is fewer than `max_answers`, fewer answers will be returned.
+    """
     params = {
         'site': 'stackoverflow',
         'key': os.getenv('STACK_OVERFLOW_KEY'),

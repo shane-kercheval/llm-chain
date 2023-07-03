@@ -35,7 +35,6 @@ class OpenAIEmbeddings(EmbeddingsModel):
         self.timeout = timeout
 
     def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsRecord]:
-        """TODO."""
         import openai
         texts = [self.doc_prep(x.content) for x in docs]
         response = retry_handler()(
@@ -54,8 +53,12 @@ class OpenAIEmbeddings(EmbeddingsModel):
         return embeddings, metadata
 
     @property
-    def cost_per_token(self) -> dict:
-        """TODO."""
+    def cost_per_token(self) -> float:
+        """
+        Returns a float corresponding to the cost-per-token for the corresponding model.
+        We need to dynamically look this up since the model_name can change over the course of the
+        object's lifetime.
+        """
         return MODEL_COST_PER_TOKEN[self.model_name]
 
 class OpenAIChat(ChatModel):
@@ -98,8 +101,6 @@ class OpenAIChat(ChatModel):
             timeout:
                 timeout value passed to OpenAI model.
         """
-        # TODO: doc string model_name e.g. 'gpt-3.5-turbo'
-        # copied from https://github.com/hwchase17/langchain/blob/master/langchain/callbacks/openai_info.py
         super().__init__()
         self.model_name = model_name
         self.temperature = temperature
@@ -196,7 +197,7 @@ class OpenAIChat(ChatModel):
     def cost_per_token(self) -> dict:
         """
         Returns a dictionary containing 'input' and 'output' keys each containing a float
-        corresponding to the cost per token for the corresponding token type and model.
+        corresponding to the cost-per-token for the corresponding token type and model.
         We need to dynamically look this up since the model_name can change over the course of the
         object's lifetime.
         """

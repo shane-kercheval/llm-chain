@@ -4,7 +4,7 @@ modified prompt. Each prompt_template is given the information it needs when it 
 So for example, if a template's job is to search for relevant documents, it's provided the vector
 database when the object is created (not via __call__).
 """
-from llm_chain.base import DocumentIndex, EmbeddingsRecord, PromptTemplate
+from llm_chain.base import DocumentIndex, Record, PromptTemplate
 from llm_chain.resources import PROMPT_TEMPLATE__INCLUDE_DOCUMENTS
 
 
@@ -48,6 +48,6 @@ class DocSearchTemplate(PromptTemplate):
             replace('{{prompt}}', prompt)
 
     @property
-    def history(self) -> list[EmbeddingsRecord]:
-        """TODO."""
+    def history(self) -> list[Record]:
+        """Propagate the history from the underlying DocumentIndex object."""
         return self._doc_index.history
