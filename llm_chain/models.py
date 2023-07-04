@@ -8,10 +8,11 @@ from llm_chain.utilities import num_tokens, num_tokens_from_messages, retry_hand
 
 class OpenAIEmbeddings(EmbeddingsModel):
     """
-    Wrapper around the OpenAI Embeddings model. When the object is called with a list of Document
-    objects, it returns a tuple containing the embeddings (which is a lists where each item
-    corresponds with a Document and is the embedding (list of floats)) and an `EmbeddingsRecord`
-    object which tracks costs and other metadata.
+    A convenient wrapper around the OpenAI Embeddings model. When you invoke this object with a
+    list of Document objects, it will return a tuple. This tuple consists of two elements:
+    1. The embeddings, which are represented as a list where each item corresponds to a Document
+    and contains the embedding (a list of floats).
+    2. An `EmbeddingsRecord` object, which track of costs and other relevant metadata.
     """
 
     def __init__(

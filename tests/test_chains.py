@@ -1,4 +1,4 @@
-"""TODO."""
+"""Tests Chain functionality."""
 from time import sleep
 from llm_chain.base import Document, HistoricalUsageRecords, MessageRecord, Record, UsageRecord, \
     Chain, Value

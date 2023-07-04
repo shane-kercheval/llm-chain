@@ -6,7 +6,7 @@ from llm_chain.base import Chain, HistoricalUsageRecords, MessageRecord, Record,
 
 
 class MockHistoricalUsageRecords(HistoricalUsageRecords):
-    """TODO."""
+    """Object used to Mock a model used in a link."""
 
     def __init__(self, mock_id: str) -> None:
         super().__init__()
