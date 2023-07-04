@@ -1,6 +1,6 @@
 """Helper methods for notebooks."""
 from IPython.display import display, Markdown
-from llm_chain.base import MessageRecord
+from llm_chain.base import ExchangeRecord
 
 
 def usage_string(
@@ -25,7 +25,7 @@ def mprint(value: str) -> None:
     display(Markdown(value))
 
 
-def messages_string(messages: list[MessageRecord], cost_precision: int = 5) -> str:
+def messages_string(messages: list[ExchangeRecord], cost_precision: int = 5) -> str:
     """
     Returns a string containing the formatted messages; can be used with `mprint` to display the
     message history in a notebook cell.

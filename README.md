@@ -65,10 +65,10 @@ Tokens: 395
 Message History:
 
 ```python
-print(chain.message_history[0].prompt)
-print(chain.message_history[0].response)
-print(chain.message_history[1].prompt)
-print(chain.message_history[1].response)
+print(chain.exchange_history[0].prompt)
+print(chain.exchange_history[0].response)
+print(chain.exchange_history[1].prompt)
+print(chain.exchange_history[1].response)
 ```
 
 Output:

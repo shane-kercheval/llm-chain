@@ -19,13 +19,9 @@ class Record(BaseModel):
     metadata: dict = Field(default_factory=dict)
 
     def __str__(self) -> str:
-        return f"timestamp: {self.timestamp}; metadata: {self.metadata}"
-
-
-class StreamingEvent(Record):
-    """Contains the information from a streaming event."""
-
-    response: str
+        return \
+            f"timestamp: {self.timestamp}; " \
+            f"uuid: {self.uuid}"
 
 
 class UsageRecord(Record):
@@ -35,32 +31,47 @@ class UsageRecord(Record):
     cost: float | None = None
 
     def __str__(self) -> str:
-        return f"timestamp: {self.timestamp}; cost: ${self.cost or 0:.6f}; " \
-            f"total_tokens: {self.total_tokens or 0:,}; metadata: {self.metadata}"
+        return \
+            f"timestamp: {self.timestamp}; " \
+            f"cost: ${self.cost or 0:.6f}; " \
+            f"total_tokens: {self.total_tokens or 0:,}; " \
+            f"uuid: {self.uuid}"
 
 
-class MessageRecord(UsageRecord):
+class ExchangeRecord(UsageRecord):
     """
-    A MessageRecord represents a single interaction with an LLM, encompassing a prompt and its
-    corresponding response. Its purpose is to record details of the interaction, including the
-    token count and associated costs.
+    An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input
+    (prompt) and its corresponding output (response). For example, it could represent a single
+    prompt and correpsonding response from within a larger conversation with ChatGPT. Its
+    purpose is to record details of the interaction/exchange, including the token count and
+    associated costs, if any.
     """
 
     prompt: str
     response: str
-    metadata: dict | None
     prompt_tokens: int | None = None
     response_tokens: int | None = None
 
     def __str__(self) -> str:
-        return f"timestamp: {self.timestamp}; prompt: \"{self.prompt.strip()[0:20]}...\"; "\
-            f"response: \"{self.response.strip()[0:20]}...\";  " \
-            f"cost: ${self.cost or 0:.6f}; total_tokens: {self.total_tokens or 0:,}; " \
-            f"metadata: {self.metadata}"
+        return \
+            f"timestamp: {self.timestamp}; " \
+            f"prompt: \"{self.prompt.strip()[0:50]}...\"; "\
+            f"response: \"{self.response.strip()[0:50]}...\";  " \
+            f"cost: ${self.cost or 0:.6f}; " \
+            f"total_tokens: {self.total_tokens or 0:,}; " \
+            f"prompt_tokens: {self.prompt_tokens or 0:,}; " \
+            f"response_tokens: {self.response_tokens or 0:,}; " \
+            f"uuid: {self.uuid}"
 
 
 class EmbeddingsRecord(UsageRecord):
     """Record associated with an Embeddings request."""
+
+
+class StreamingEvent(Record):
+    """Contains the information from a streaming event."""
+
+    response: str
 
 
 class Document(BaseModel):
@@ -73,42 +84,66 @@ class Document(BaseModel):
     metadata: dict | None
 
 
-class HistoricalData(ABC):
+class HistoryTracker(ABC):
     """An object that tracks history i.e. `Record` objects."""
 
     @property
     @abstractmethod
     def history(self) -> list[Record]:
-        """A list of Records for tracking events (e.g. messages, requests, searches, etc.)."""
+        """
+        Each inheriting class needs to implement the ability to track history.
+        When an object doesn't have any history, it should return an empty list rather than `None`.
+        """
+
+    def history_filter(self, record_types: type | tuple[type]) -> list[Record]:
+        """
+        Returns the history (list of Records objects) associated with an object based on the
+        `record_types` provided.
+
+        Args:
+            record_types: either a single type or tuple of types indicating the type of Record
+            objects to return (e.g. `UsageRecord` or `(ExchangeRecord, EmbeddingsRecord)`).
+        """
+        if isinstance(record_types, type | tuple):
+            return [x for x in self.history if isinstance(x, record_types)]
+
+        raise ValueError(f"record_types not a valid type ({type(record_types)}) ")
+
+    def calculate_historical(self, name: str) -> int | float:
+        """
+        For a given property `name` (e.g. `cost` or `total_tokens`), this function sums the values
+        across all Record objects in the history, for any Record object that contains the property.
+        """
+        records = [x for x in self.history if has_property(obj=x, property_name=name)]
+        if records:
+            return sum(getattr(x, name) or 0 for x in records)
+        return 0
 
 
-class HistoricalUsageRecords(HistoricalData):
+class UsageHistoryTracker(HistoryTracker):
     """
-    An object that tracks usage history i.e. `UsageRecord` objects (e.g. usage/tokens/costs in chat
-    or embeddings model).
+    An object that tracks usage history i.e. `UsageRecord` objects (e.g. tokens and/or costs in a
+    chat or embeddings model).
     """
-
-    @property
-    @abstractmethod
-    def history(self) -> list[UsageRecord]:
-        """A list of Records for tracking events (e.g. messages, requests, searches, etc.)."""
 
     @property
     def total_tokens(self) -> int | None:
-        """The total number of tokens associated with the event."""
-        if self.history and self.history[0].total_tokens is not None:
-            return sum(x.total_tokens for x in self.history)
-        return None
+        """
+        Sums the `total_tokens` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
+        """
+        return self.calculate_historical(name='total_tokens')
 
     @property
     def cost(self) -> float | None:
-        """The total cost associated with the event."""
-        if self.history and self.history[0].cost is not None:
-            return sum(x.cost for x in self.history)
-        return None
+        """
+        Sums the `cost` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
+        """
+        return self.calculate_historical(name='cost')
 
 
-class LargeLanguageModel(HistoricalUsageRecords):
+class LargeLanguageModel(UsageHistoryTracker):
     """
     A LargeLanguageModel, such as ChatGPT-3 or text-embedding-ada-002 (an embeddings model), is a
     class designed to be callable. Given specific inputs, such as prompts for chat-based models or
@@ -124,11 +159,6 @@ class LargeLanguageModel(HistoricalUsageRecords):
     @abstractmethod
     def __call__(self, value: object) -> object:
         """Executes the chat request based on the value (e.g. message(s)) passed in."""
-
-    @property
-    @abstractmethod
-    def history(self) -> list[Record]:
-        """A list of Records for tracking chat messages (e.g. prompt/response)."""
 
 
 class EmbeddingsModel(LargeLanguageModel):
@@ -175,19 +205,21 @@ class EmbeddingsModel(LargeLanguageModel):
         return self._history
 
 
-class ChatModel(LargeLanguageModel):
+class PromptModel(LargeLanguageModel):
     """
-    The ChatModel class represents a callable entity, such as ChatGPT-3, that takes a string as
-    input and returns a string. It provides auxiliary methods to monitor the usage history of an
-    instantiated model, including metrics like tokens used or costs incurred.
+    The PromptModel class represents an LLM where each exchange (from the end-user's perspective)
+    is a string input (user's prompt) and string output (model's response). For example, an
+    exchange could represent a single prompt (input) and correpsonding response (output) from a
+    ChatGPT or InstructGPT model. It provides auxiliary methods to monitor the usage history of an
+    instantiated model, including metrics like tokens used.
     """
 
     def __init__(self):
         super().__init__()
-        self._history: list[MessageRecord] = []
+        self._history: list[ExchangeRecord] = []
 
     @abstractmethod
-    def _run(self, prompt: str) -> MessageRecord:
+    def _run(self, prompt: str) -> ExchangeRecord:
         """Subclasses should override this function and generate responses from the LLM."""
 
 
@@ -203,12 +235,12 @@ class ChatModel(LargeLanguageModel):
         return response.response
 
     @property
-    def history(self) -> list[MessageRecord]:
+    def history(self) -> list[ExchangeRecord]:
         """A list of MessageRecord objects for tracking chat messages (prompt/response)."""
         return self._history
 
     @property
-    def previous_message(self) -> MessageRecord | None:
+    def previous_exchange(self) -> ExchangeRecord | None:
         """Returns the last/previous message (MessageRecord) associated with the chat model."""
         if len(self.history) == 0:
             return None
@@ -217,7 +249,7 @@ class ChatModel(LargeLanguageModel):
     @property
     def previous_prompt(self) -> str | None:
         """Returns the last/previous prompt used in chat model."""
-        previous_message = self.previous_message
+        previous_message = self.previous_exchange
         if previous_message:
             return previous_message.prompt
         return None
@@ -225,7 +257,7 @@ class ChatModel(LargeLanguageModel):
     @property
     def previous_response(self) -> str | None:
         """Returns the last/previous response used in chat model."""
-        previous_message = self.previous_message
+        previous_message = self.previous_exchange
         if previous_message:
             return previous_message.response
         return None
@@ -233,27 +265,18 @@ class ChatModel(LargeLanguageModel):
     @property
     def prompt_tokens(self) -> int | None:
         """
-        Returns the total number of prompt_tokens used by the model during this object's lifetime.
-
-        Returns `None` if the model does not know how to count tokens.
+        Sums the `prompt_tokens` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
         """
-        # if there is no token_counter then there won't be a way to calculate the number of tokens
-        if self.previous_message and self.previous_message.prompt_tokens:
-            return sum(x.prompt_tokens for x in self.history)
-        return None
+        return self.calculate_historical(name='prompt_tokens')
 
     @property
     def response_tokens(self) -> int | None:
         """
-        Returns the total number of response_tokens used by the model during this object's
-        lifetime.
-
-        Returns `None` if the model does not know how to count tokens.
+        Sums the `response_tokens` values across all Record objects (which contain that property)
+        returned by this object's `history` property.
         """
-        # if there is no token_counter then there won't be a way to calculate the number of tokens
-        if self.previous_message and self.previous_message.response_tokens:
-            return sum(x.response_tokens for x in self.history)
-        return None
+        return self.calculate_historical(name='response_tokens')
 
 
 class MemoryBuffer(ABC):
@@ -263,14 +286,14 @@ class MemoryBuffer(ABC):
     """
 
     @abstractmethod
-    def __call__(self, history: list[MessageRecord]) -> list[MessageRecord]:
+    def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
         """
         Takes the hisitory of messages and returns a modified/reduced list of messages based on the
         memory strategy.
         """
 
 
-class PromptTemplate(HistoricalUsageRecords):
+class PromptTemplate(HistoryTracker):
     """
     A PromptTemplate is a callable object that takes a prompt (e.g. user query) as input and
     returns a modified prompt. Each PromptTemplate is provided with the necessary information
@@ -283,13 +306,8 @@ class PromptTemplate(HistoricalUsageRecords):
     def __call__(self, prompt: str) -> str:
         """Takes the original prompt (user inuput) and returns a modified prompt."""
 
-    @property
-    @abstractmethod
-    def history(self) -> list[Record]:
-        """Propagate any underlying history from e.g. embeddings models."""
 
-
-class DocumentIndex(HistoricalUsageRecords):
+class DocumentIndex(HistoryTracker):
     """
     A `DocumentIndex` is a mechanism for adding and searching for `Document` objects. It can be
     thought of as a wrapper around chromadb or any other similar database.
@@ -362,11 +380,6 @@ class DocumentIndex(HistoricalUsageRecords):
             value = Document(content=value)
         return self._search(doc=value, n_results=n_results or self._n_results)
 
-    @property
-    @abstractmethod
-    def history(self) -> list[Record]:
-        """Propagates the history of any underlying models (e.g. embeddings model)."""
-
 
 class Value:
     """
@@ -389,85 +402,49 @@ class Value:
         return self.value
 
 
-class LinkAggregator(ABC):
+class HistoryAggregator(HistoryTracker):
     """
     A LinkAggregator is an object that aggregates the usage and costs across all associated objects
     (e.g. across the links of a Chain object).
     """
 
     @property
-    @abstractmethod
-    def history(self) -> list[Record]:
-        """A list of Record objects tracking important records/events."""
-
-    @property
     def usage_history(self) -> list[UsageRecord]:
         """Returns all records of type UsageRecord."""
-        return [x for x in self.history if isinstance(x, UsageRecord)]
+        return self.history_filter(UsageRecord)
 
     @property
-    def message_history(self) -> list[MessageRecord]:
+    def exchange_history(self) -> list[ExchangeRecord]:
         """Returns all records of type MessageRecord."""
-        return [x for x in self.history if isinstance(x, MessageRecord)]
+        return self.history_filter(ExchangeRecord)
+
+    @property
+    def embedding_history(self) -> list[EmbeddingsRecord]:
+        """Returns all records of type MessageRecord."""
+        return self.history_filter(EmbeddingsRecord)
+
+    @property
+    def cost(self) -> int | None:
+        """The total cost summed across all Record objects."""
+        return self.calculate_historical(name='cost')
 
     @property
     def total_tokens(self) -> int | None:
-        """
-        Returns the total number of tokens used by the all models during the chain/object's
-        lifetime.
-
-        Returns `None` if none of the models knows how to count tokens.
-        """
-        records = self.usage_history
-        totals = [x.total_tokens for x in records if x.total_tokens]
-        if not totals:
-            return None
-        return sum(totals)
-
-    @property
-    def cost(self) -> float | None:
-        """
-        Returns the total cost used by the all models during the chain/object's
-        lifetime.
-
-        Returns `None` if none of the models knows how to count cost.
-        """
-        records = self.usage_history
-        totals = [x.cost for x in records if x.cost]
-        if not totals:
-            return None
-        return sum(totals)
+        """The total number of tokens summed across all Record objects."""
+        return self.calculate_historical(name='total_tokens')
 
     @property
     def prompt_tokens(self) -> int | None:
-        """
-        Returns the total number of prompt tokens used by the all models during the chain/object's
-        lifetime.
-
-        Returns `None` if none of the models knows how to count tokens.
-        """
-        records = self.message_history
-        totals = [x.prompt_tokens for x in records if x.prompt_tokens]
-        if not totals:
-            return None
-        return sum(totals)
+        """The total number of prompt tokens summed across all Record objects."""
+        return self.calculate_historical(name='prompt_tokens')
 
     @property
     def response_tokens(self) -> int | None:
-        """
-        Returns the total number of response tokens used by the all models during the
-        chain/object's lifetime.
-
-        Returns `None` if none of the models knows how to count tokens.
-        """
-        records = self.message_history
-        totals = [x.response_tokens for x in records if x.response_tokens]
-        if not totals:
-            return None
-        return sum(totals)
+        """The total number of response tokens summed across all Record objects."""
+        return self.calculate_historical(name='response_tokens')
 
 
-class Chain(LinkAggregator):
+class Chain(HistoryAggregator):
     """
     A Chain object is a collection of `links`. Each link in the chain is a callable, which can be
     either a function or an object that implements the `__call__` method.
@@ -529,7 +506,7 @@ class Chain(LinkAggregator):
         return sorted(unique_records, key=lambda x: x.timestamp)
 
 
-class Session(LinkAggregator):
+class Session(HistoryAggregator):
     """
     A Session is used to aggregate multiple Chain objects. It provides a way to track and manage
     multiple Chains within the same session. When calling a Session, it will execute the last chain
@@ -591,10 +568,10 @@ class Session(LinkAggregator):
 
 def _has_history(obj: object) -> bool:
     """
-    For a given object `obj`, return True if that object has a `history` property and if the
-    history property has any Record objects.
+    For a given object `obj`, return True if that object has a `history` method and if the
+    history has any Record objects.
     """
-    return has_property(obj, property_name='history') and \
+    return has_property(obj, 'history') and \
         isinstance(obj.history, list) and \
         len(obj.history) > 0 and \
         isinstance(obj.history[0], Record)

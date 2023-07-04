@@ -123,7 +123,21 @@ def retry_handler(num_retries: int = 3, wait_fixed: int = 1) -> Callable:
 
 
 def has_property(obj: object, property_name: str) -> bool:
-    """Returns True if the object has a property with the name `property_name`."""
+    """
+    Returns True if the object has a property (or instance variable) with the name
+    `property_name`.
+    """
+    # if `obj` is itself a function, it will not have any properties
     if inspect.isfunction(obj):
         return False
-    return hasattr(obj, property_name)
+
+    return hasattr(obj, property_name) and \
+        not callable(getattr(obj.__class__, property_name, None))
+
+
+def has_method(obj: object, method_name: str) -> bool:
+    """Returns True if the object has a method with the name `property_name`."""
+    # if `obj` is itself a function, it will not have any properties
+    if inspect.isfunction(obj):
+        return False
+    return hasattr(obj, method_name) and callable(getattr(obj.__class__, method_name, None))

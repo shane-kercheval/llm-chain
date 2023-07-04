@@ -6,13 +6,13 @@ import numpy as np
 import pytest
 from dotenv import load_dotenv
 
-from llm_chain.base import ChatModel, Document, EmbeddingsRecord, EmbeddingsModel, \
-    MessageRecord
+from llm_chain.base import PromptModel, Document, EmbeddingsRecord, EmbeddingsModel, \
+    ExchangeRecord
 
 load_dotenv()
 
 
-class MockChat(ChatModel):
+class MockChat(PromptModel):
     """Used for unit tests to mock the behavior of an LLM."""
 
     def __init__(
@@ -36,7 +36,7 @@ class MockChat(ChatModel):
         self.cost_per_token = cost_per_token
         self.return_prompt = return_prompt
 
-    def _run(self, prompt: str) -> MessageRecord:
+    def _run(self, prompt: str) -> ExchangeRecord:
         if self.return_prompt:
             response = self.return_prompt + prompt
         else:
@@ -46,7 +46,7 @@ class MockChat(ChatModel):
         response_tokens = self.token_counter(response) if self.token_counter else None
         total_tokens = prompt_tokens + response_tokens if self.token_counter else None
         cost = total_tokens * self.cost_per_token if self.cost_per_token else None
-        return MessageRecord(
+        return ExchangeRecord(
             prompt=prompt,
             response=response,
             total_tokens=total_tokens,

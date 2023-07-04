@@ -89,4 +89,20 @@ class ChromaDocumentIndex(DocumentIndex):
     @property
     def history(self) -> list[EmbeddingsRecord]:
         """Propagates the history of any underlying models (e.g. embeddings model)."""
-        return self._emb_model.history if self._emb_model else None
+        return self._emb_model.history if self._emb_model else []
+
+    @property
+    def total_tokens(self) -> int | None:
+        """
+        Sums the `total_tokens` values across all EmbeddingsRecord objects returned by this
+        object's `history` property.
+        """
+        return self.calculate_historical(name='total_tokens')
+
+    @property
+    def cost(self) -> float | None:
+        """
+        Sums the `cost` values across all EmbeddingsRecord objects returned by this object's
+        `history` property.
+        """
+        return self.calculate_historical(name='cost')

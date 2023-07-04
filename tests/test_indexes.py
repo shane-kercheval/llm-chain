@@ -65,14 +65,14 @@ def test_chroma_add_search_documents(fake_docs_abcd):  # noqa
     client = chromadb.Client()
     collection = client.create_collection("test")
     chroma_db = ChromaDocumentIndex(collection=collection, embeddings_model=embeddings_model)
-    assert chroma_db.total_tokens is None
-    assert chroma_db.cost is None
+    assert chroma_db.total_tokens == 0
+    assert chroma_db.cost == 0
     chroma_db.add(docs=None)
-    assert chroma_db.total_tokens is None
-    assert chroma_db.cost is None
+    assert chroma_db.total_tokens == 0
+    assert chroma_db.cost == 0
     chroma_db.add(docs=[])
-    assert chroma_db.total_tokens is None
-    assert chroma_db.cost is None
+    assert chroma_db.total_tokens == 0
+    assert chroma_db.cost == 0
 
     chroma_db.add(docs=fake_docs_abcd)
     initial_expected_tokens = len("Doc X") * len(fake_docs_abcd)
@@ -198,14 +198,14 @@ def test_chroma_search_with_document_and_str(fake_docs_abcd):  # noqa
 
 def test_chroma_without_collection_or_embeddings_model():  # noqa
     chroma_db = ChromaDocumentIndex(collection=None, embeddings_model=None)
-    assert chroma_db.total_tokens is None
-    assert chroma_db.cost is None
+    assert chroma_db.total_tokens == 0
+    assert chroma_db.cost == 0
     chroma_db.add(docs=None)
-    assert chroma_db.total_tokens is None
-    assert chroma_db.cost is None
+    assert chroma_db.total_tokens == 0
+    assert chroma_db.cost == 0
     chroma_db.add(docs=[])
-    assert chroma_db.total_tokens is None
-    assert chroma_db.cost is None
+    assert chroma_db.total_tokens == 0
+    assert chroma_db.cost == 0
 
     docs = [
         Document(content="This is a document about basketball.", metadata={'id': 0}),
@@ -213,9 +213,9 @@ def test_chroma_without_collection_or_embeddings_model():  # noqa
         Document(content="This is a document about football.", metadata={'id': 2}),
     ]
     chroma_db.add(docs=docs)
-    assert chroma_db.total_tokens is None
-    assert chroma_db.cost is None
-    assert chroma_db.history is None
+    assert chroma_db.total_tokens == 0
+    assert chroma_db.cost == 0
+    assert chroma_db.history == []
 
     # verify documents and embeddings where added to collection
     collection_docs = chroma_db._collection.get(include = ['documents', 'metadatas', 'embeddings'])
@@ -231,6 +231,6 @@ def test_chroma_without_collection_or_embeddings_model():  # noqa
     assert results[0].content == docs[1].content
     assert results[0].metadata['id'] == docs[1].metadata['id']
     assert results[0].metadata['distance'] < 1
-    assert chroma_db.total_tokens is None
-    assert chroma_db.cost is None
-    assert chroma_db.history is None
+    assert chroma_db.total_tokens == 0
+    assert chroma_db.cost == 0
+    assert chroma_db.history == []

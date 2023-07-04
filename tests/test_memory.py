@@ -1,6 +1,6 @@
 """tests llm_chain/memory.py."""
 
-from llm_chain.base import MessageRecord
+from llm_chain.base import ExchangeRecord
 from llm_chain.memory import MemoryBufferMessageWindow, MemoryBufferTokenWindow
 from llm_chain.models import OpenAIChat
 from llm_chain.resources import MODEL_COST_PER_TOKEN
@@ -12,13 +12,13 @@ def test_OpenAIChat__MemoryBufferMessageWindow0():  # noqa
         model_name=model_name,
         memory_strategy=MemoryBufferMessageWindow(last_n_messages=0),
     )
-    assert openai_llm.previous_message is None
+    assert openai_llm.previous_exchange is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
-    assert openai_llm.cost is None
-    assert openai_llm.total_tokens is None
-    assert openai_llm.prompt_tokens is None
-    assert openai_llm.response_tokens is None
+    assert openai_llm.cost == 0
+    assert openai_llm.total_tokens == 0
+    assert openai_llm.prompt_tokens == 0
+    assert openai_llm.response_tokens == 0
 
     ####
     # first interaction
@@ -36,8 +36,8 @@ def test_OpenAIChat__MemoryBufferMessageWindow0():  # noqa
     assert openai_llm._previous_memory[-1]['content'] == prompt
 
     assert len(openai_llm._history) == 1
-    message = openai_llm.previous_message
-    assert isinstance(message, MessageRecord)
+    message = openai_llm.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': model_name}
@@ -79,8 +79,8 @@ def test_OpenAIChat__MemoryBufferMessageWindow0():  # noqa
     assert openai_llm._previous_memory[1]['content'] == prompt
 
     assert len(openai_llm._history) == 2
-    message = openai_llm.previous_message
-    assert isinstance(message, MessageRecord)
+    message = openai_llm.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': model_name}
@@ -103,13 +103,13 @@ def test_OpenAIChat__MemoryBufferMessageWindow1():  # noqa
         model_name=model_name,
         memory_strategy=MemoryBufferMessageWindow(last_n_messages=1),
     )
-    assert openai_llm.previous_message is None
+    assert openai_llm.previous_exchange is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
-    assert openai_llm.cost is None
-    assert openai_llm.total_tokens is None
-    assert openai_llm.prompt_tokens is None
-    assert openai_llm.response_tokens is None
+    assert openai_llm.cost == 0
+    assert openai_llm.total_tokens == 0
+    assert openai_llm.prompt_tokens == 0
+    assert openai_llm.response_tokens == 0
 
     ####
     # first interaction
@@ -127,8 +127,8 @@ def test_OpenAIChat__MemoryBufferMessageWindow1():  # noqa
     assert openai_llm._previous_memory[-1]['content'] == prompt
 
     assert len(openai_llm._history) == 1
-    message = openai_llm.previous_message
-    assert isinstance(message, MessageRecord)
+    message = openai_llm.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': model_name}
@@ -173,8 +173,8 @@ def test_OpenAIChat__MemoryBufferMessageWindow1():  # noqa
     assert openai_llm._previous_memory[3]['content'] == prompt
 
     assert len(openai_llm._history) == 2
-    message = openai_llm.previous_message
-    assert isinstance(message, MessageRecord)
+    message = openai_llm.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': model_name}
@@ -218,8 +218,8 @@ def test_OpenAIChat__MemoryBufferMessageWindow1():  # noqa
     assert len(openai_llm._previous_memory) == 4
 
     assert len(openai_llm._history) == 3
-    message = openai_llm.previous_message
-    assert isinstance(message, MessageRecord)
+    message = openai_llm.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': model_name}
@@ -259,8 +259,8 @@ def test_OpenAIChat__MemoryBufferMessageWindow1():  # noqa
     assert len(openai_llm._previous_memory) == 4
 
     assert len(openai_llm._history) == 4
-    message = openai_llm.previous_message
-    assert isinstance(message, MessageRecord)
+    message = openai_llm.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': model_name}
@@ -280,13 +280,13 @@ def test_OpenAIChat__MemoryBufferTokenWindow():  # noqa
         model_name=model_name,
         memory_strategy=MemoryBufferTokenWindow(last_n_tokens=token_threshold),
     )
-    assert openai_llm.previous_message is None
+    assert openai_llm.previous_exchange is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
-    assert openai_llm.cost is None
-    assert openai_llm.total_tokens is None
-    assert openai_llm.prompt_tokens is None
-    assert openai_llm.response_tokens is None
+    assert openai_llm.cost == 0
+    assert openai_llm.total_tokens == 0
+    assert openai_llm.prompt_tokens == 0
+    assert openai_llm.response_tokens == 0
 
     ####
     # first interaction
@@ -297,7 +297,7 @@ def test_OpenAIChat__MemoryBufferTokenWindow():  # noqa
     assert 'shane' in response.lower()
     assert isinstance(response, str)
     assert len(openai_llm._previous_memory) == 2
-    assert openai_llm.previous_message.total_tokens <= token_threshold
+    assert openai_llm.previous_exchange.total_tokens <= token_threshold
     assert openai_llm._previous_memory[0]['role'] == 'system'
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
@@ -312,7 +312,7 @@ def test_OpenAIChat__MemoryBufferTokenWindow():  # noqa
     response = openai_llm(prompt)
     assert '42' in response.lower()
     assert len(openai_llm._previous_memory) == 4
-    assert openai_llm.previous_message.total_tokens <= token_threshold
+    assert openai_llm.previous_exchange.total_tokens <= token_threshold
     assert openai_llm._previous_memory[0]['role'] == 'system'
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt
@@ -329,7 +329,7 @@ def test_OpenAIChat__MemoryBufferTokenWindow():  # noqa
     assert 'blue' not in response.lower()
     # previous memory is still 4 since it only remembers last message + new prompt + system mesasge
     assert len(openai_llm._previous_memory) == 4
-    assert openai_llm.previous_message.total_tokens <= token_threshold
+    assert openai_llm.previous_exchange.total_tokens <= token_threshold
     assert openai_llm._previous_memory[0]['role'] == 'system'
     assert openai_llm._previous_memory[-1]['role'] == 'user'
     assert openai_llm._previous_memory[-1]['content'] == prompt

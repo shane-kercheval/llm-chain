@@ -8,7 +8,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, validator
 from markdownify import markdownify as html_to_markdown
 from llm_chain.utilities import retry_handler
-from llm_chain.base import Document, HistoricalData, Record, RequestError
+from llm_chain.base import Document, HistoryTracker, Record, RequestError
 
 
 def split_documents(
@@ -81,7 +81,7 @@ class SearchRecord(Record):
     results: list[dict]
 
 
-class DuckDuckGoSearch(HistoricalData):
+class DuckDuckGoSearch(HistoryTracker):
     """
     A wrapper around DuckDuckGo web search. The object is called with a query and returns a list of
     SearchRecord objects associated with the top search results.

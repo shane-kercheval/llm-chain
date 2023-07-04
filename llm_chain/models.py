@@ -1,7 +1,7 @@
 """Contains models."""
 from collections.abc import Callable
-from llm_chain.base import ChatModel, Document, EmbeddingsRecord, EmbeddingsModel, MemoryBuffer, \
-    MessageRecord, StreamingEvent
+from llm_chain.base import PromptModel, Document, EmbeddingsRecord, EmbeddingsModel, \
+    MemoryBuffer, ExchangeRecord, StreamingEvent
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 from llm_chain.utilities import num_tokens, num_tokens_from_messages, retry_handler
 
@@ -62,7 +62,7 @@ class OpenAIEmbeddings(EmbeddingsModel):
         """
         return MODEL_COST_PER_TOKEN[self.model_name]
 
-class OpenAIChat(ChatModel):
+class OpenAIChat(PromptModel):
     """
     Wrapper around the OpenAI chat model (i.e. https://api.openai.com/v1/chat/completions
     endpoint). More info here: https://platform.openai.com/docs/api-reference/chat.
@@ -75,7 +75,7 @@ class OpenAIChat(ChatModel):
             max_tokens: int = 2000,
             system_message: str = 'You are a helpful assistant.',
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
-            memory_strategy: MemoryBuffer | Callable[[list[MessageRecord]], list[MessageRecord]] | None = None,  # noqa: E501
+            memory_strategy: MemoryBuffer | Callable[[list[ExchangeRecord]], list[ExchangeRecord]] | None = None,  # noqa: E501
             timeout: int = 10,
             ) -> None:
         """
@@ -112,7 +112,7 @@ class OpenAIChat(ChatModel):
         self.timeout = timeout
         self._previous_memory = None
 
-    def _run(self, prompt: str) -> MessageRecord:
+    def _run(self, prompt: str) -> ExchangeRecord:
         """
         `openai.ChatCompletion.create` expects a list of messages with various roles (i.e. system,
         user, assistant). This function builds the list of messages based on the history of
@@ -184,7 +184,7 @@ class OpenAIChat(ChatModel):
         cost = (prompt_tokens * self.cost_per_token['input']) + \
             (completion_tokens * self.cost_per_token['output'])
 
-        return MessageRecord(
+        return ExchangeRecord(
             prompt=prompt,
             response=response_message,
             metadata={'model_name': self.model_name},
