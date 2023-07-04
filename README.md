@@ -51,15 +51,20 @@ The meaning of life is a philosophical question that has been debated for centur
 Total costs/tokens for all activity in the chain:
 
 ```python
-print(f"Cost:   ${chain.cost:.4f}")
-print(f"Tokens: {chain.total_tokens:,}")
+print(f"Cost:           ${chain.cost:.4f}")
+print(f"Total Tokens:    {chain.total_tokens:,}")
+print(f"Prompt Tokens:   {chain.prompt_tokens:,}")
+print(f"Response Tokens: {chain.response_tokens:,}")
 ```
 
 Output:
 
 ```
-Cost:   $0.0007
-Tokens: 395
+Cost:           $0.00063
+Total Tokens:    375
+Prompt Tokens:   239
+Response Tokens: 136
+
 ```
 
 Exchange History (a single exchange is a combination of a prompt and the corresponding response):
@@ -162,16 +167,22 @@ The meaning of life is subjective and each person must answer it for themselves;
 We can also track costs:
 
 ```python
-print(f"Cost:   ${chain.cost:.4f}")
-print(f"Tokens: {chain.total_tokens:,}")
+print(f"Cost:           ${chain.cost:.4f}")
+print(f"Total Tokens:    {chain.total_tokens:,}")
+print(f"Prompt Tokens:   {chain.prompt_tokens:,}")
+print(f"Response Tokens: {chain.response_tokens:,}")
 ```
 
 Output:
 
 ```
-Cost:   $0.0054
-Tokens: 45,674
+Cost:           $0.00552
+Total Tokens:    44,369
+Prompt Tokens:   567
+Response Tokens: 153
 ```
+
+Note that, in this case, "Total Tokens" also include tokens used by the OpenAIEmbeddings model.
 
 Additionally, we can track the history of the chain with the `chain.history` property. See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an example.
 
