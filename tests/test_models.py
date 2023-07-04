@@ -1,6 +1,6 @@
 """tests llm_chain/models.py."""
 import pytest
-from llm_chain.base import Document, EmbeddingsModel, EmbeddingsRecord, MessageRecord, Record, \
+from llm_chain.base import Document, EmbeddingsModel, EmbeddingsRecord, ExchangeRecord, Record, \
     StreamingEvent, UsageRecord
 from llm_chain.models import OpenAIChat, OpenAIEmbeddings
 from llm_chain.resources import MODEL_COST_PER_TOKEN
@@ -9,13 +9,13 @@ from tests.conftest import MockChat, MockRandomEmbeddings
 
 def test_ChatModel__no_token_counter_or_costs():  # noqa
     model = MockChat(token_counter=None, cost_per_token=None)
-    assert model.previous_message is None
+    assert model.previous_exchange is None
     assert model.previous_prompt is None
     assert model.previous_response is None
-    assert model.cost is None
-    assert model.total_tokens is None
-    assert model.prompt_tokens is None
-    assert model.response_tokens is None
+    assert model.cost == 0
+    assert model.total_tokens == 0
+    assert model.prompt_tokens == 0
+    assert model.response_tokens == 0
 
     ####
     # first interaction
@@ -26,8 +26,8 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert len(response) > 1
 
     assert len(model._history) == 1
-    message = model.previous_message
-    assert isinstance(message, MessageRecord)
+    message = model.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': 'mock'}
@@ -42,10 +42,10 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert model.previous_response == response
     assert model.cost_per_token is None
     assert model.token_counter is None
-    assert model.cost is None
-    assert model.total_tokens is None
-    assert model.prompt_tokens is None
-    assert model.response_tokens is None
+    assert model.cost == 0
+    assert model.total_tokens == 0
+    assert model.prompt_tokens == 0
+    assert model.response_tokens == 0
 
     ####
     # second interaction
@@ -57,8 +57,8 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert len(response) > 1
 
     assert len(model._history) == 2
-    message = model.previous_message
-    assert isinstance(message, MessageRecord)
+    message = model.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.metadata == {'model_name': 'mock'}
     assert message.response == response
@@ -74,22 +74,22 @@ def test_ChatModel__no_token_counter_or_costs():  # noqa
     assert model.previous_response == response
     assert model.cost_per_token is None
     assert model.token_counter is None
-    assert model.cost is None
-    assert model.total_tokens is None
-    assert model.prompt_tokens is None
-    assert model.response_tokens is None
+    assert model.cost == 0
+    assert model.total_tokens == 0
+    assert model.prompt_tokens == 0
+    assert model.response_tokens == 0
 
 def test_ChatModel__has_token_counter_and_costs():  # noqa
     token_counter = len
     cost_per_token = 3
     model = MockChat(token_counter=token_counter, cost_per_token=cost_per_token)
-    assert model.previous_message is None
+    assert model.previous_exchange is None
     assert model.previous_prompt is None
     assert model.previous_response is None
-    assert model.cost is None
-    assert model.total_tokens is None
-    assert model.prompt_tokens is None
-    assert model.response_tokens is None
+    assert model.cost == 0
+    assert model.total_tokens == 0
+    assert model.prompt_tokens == 0
+    assert model.response_tokens == 0
 
     ####
     # first interaction
@@ -105,8 +105,8 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     expected_costs = expected_tokens * cost_per_token
 
     assert len(model._history) == 1
-    message = model.previous_message
-    assert isinstance(message, MessageRecord)
+    message = model.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.cost == expected_costs
@@ -145,8 +145,8 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
     expected_costs = expected_tokens * cost_per_token
 
     assert len(model._history) == 2
-    message = model.previous_message
-    assert isinstance(message, MessageRecord)
+    message = model.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.cost == expected_costs
@@ -169,13 +169,13 @@ def test_ChatModel__has_token_counter_and_costs():  # noqa
 def test_OpenAIChat():  # noqa
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(model_name=model_name)
-    assert openai_llm.previous_message is None
+    assert openai_llm.previous_exchange is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
-    assert openai_llm.cost is None
-    assert openai_llm.total_tokens is None
-    assert openai_llm.prompt_tokens is None
-    assert openai_llm.response_tokens is None
+    assert openai_llm.cost == 0
+    assert openai_llm.total_tokens == 0
+    assert openai_llm.prompt_tokens == 0
+    assert openai_llm.response_tokens == 0
 
     ####
     # first interaction
@@ -192,8 +192,8 @@ def test_OpenAIChat():  # noqa
     assert openai_llm._previous_memory[-1]['content'] == prompt
 
     assert len(openai_llm._history) == 1
-    message = openai_llm.previous_message
-    assert isinstance(message, MessageRecord)
+    message = openai_llm.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': model_name}
@@ -238,8 +238,8 @@ def test_OpenAIChat():  # noqa
     assert openai_llm._previous_memory[3]['content'] == prompt
 
     assert len(openai_llm._history) == 2
-    message = openai_llm.previous_message
-    assert isinstance(message, MessageRecord)
+    message = openai_llm.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': model_name}
@@ -268,13 +268,13 @@ def test_OpenAIChat_streaming():  # noqa
 
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(model_name=model_name, streaming_callback=streaming_callback)
-    assert openai_llm.previous_message is None
+    assert openai_llm.previous_exchange is None
     assert openai_llm.previous_prompt is None
     assert openai_llm.previous_response is None
-    assert openai_llm.cost is None
-    assert openai_llm.total_tokens is None
-    assert openai_llm.prompt_tokens is None
-    assert openai_llm.response_tokens is None
+    assert openai_llm.cost == 0
+    assert openai_llm.total_tokens == 0
+    assert openai_llm.prompt_tokens == 0
+    assert openai_llm.response_tokens == 0
 
     ####
     # first interaction
@@ -292,8 +292,8 @@ def test_OpenAIChat_streaming():  # noqa
     assert openai_llm._previous_memory[-1]['content'] == prompt
 
     assert len(openai_llm._history) == 1
-    message = openai_llm.previous_message
-    assert isinstance(message, MessageRecord)
+    message = openai_llm.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': model_name}
@@ -340,8 +340,8 @@ def test_OpenAIChat_streaming():  # noqa
     assert openai_llm._previous_memory[3]['content'] == prompt
 
     assert len(openai_llm._history) == 2
-    message = openai_llm.previous_message
-    assert isinstance(message, MessageRecord)
+    message = openai_llm.previous_exchange
+    assert isinstance(message, ExchangeRecord)
     assert message.prompt == prompt
     assert message.response == response
     assert message.metadata == {'model_name': model_name}
@@ -430,8 +430,8 @@ def test_EmbeddingsModel__called_with_different_types():  # noqa
 
 def test_EmbeddingsModel__no_costs():  # noqa
     model = MockRandomEmbeddings(token_counter=len, cost_per_token=None)
-    assert model.cost is None
-    assert model.total_tokens is None
+    assert model.cost == 0
+    assert model.total_tokens == 0
 
     ####
     # first interaction
@@ -460,7 +460,7 @@ def test_EmbeddingsModel__no_costs():  # noqa
     assert first_record.timestamp
 
     assert model.total_tokens == expected_tokens
-    assert model.cost is None
+    assert model.cost == 0
 
     previous_tokens = model.total_tokens
     previous_record = first_record
@@ -501,13 +501,13 @@ def test_EmbeddingsModel__no_costs():  # noqa
     assert second_record.timestamp
 
     assert model.total_tokens == previous_tokens + expected_tokens
-    assert model.cost is None
+    assert model.cost == 0
 
 def test_EmbeddingsModel__with_costs():  # noqa
     cost_per_token = 3
     model = MockRandomEmbeddings(token_counter=len, cost_per_token=cost_per_token)
-    assert model.cost is None
-    assert model.total_tokens is None
+    assert model.cost == 0
+    assert model.total_tokens == 0
 
     ####
     # first interaction
@@ -586,8 +586,8 @@ def test_EmbeddingsModel__with_costs():  # noqa
 
 def test_OpenAIEmbeddings():  # noqa
     model = OpenAIEmbeddings(model_name='text-embedding-ada-002')
-    assert model.cost is None
-    assert model.total_tokens is None
+    assert model.cost == 0
+    assert model.total_tokens == 0
 
     ####
     # first interaction
@@ -664,29 +664,29 @@ def test_OpenAIEmbeddings():  # noqa
 
 def test_Records_to_string():  # noqa
     assert 'timestamp: ' in str(Record())
-    assert 'metadata: ' in str(Record())
+    assert 'uuid: ' in str(Record())
 
     assert 'timestamp: ' in str(UsageRecord())
-    assert 'metadata: ' in str(UsageRecord())
+    assert 'uuid: ' in str(UsageRecord())
     assert 'cost: ' in str(UsageRecord())
     assert 'total_tokens: ' in str(UsageRecord())
 
     assert 'timestamp: ' in str(UsageRecord(total_tokens=1000, cost=1.5))
-    assert 'metadata: ' in str(UsageRecord(total_tokens=1000, cost=1.5))
+    assert 'uuid: ' in str(UsageRecord(total_tokens=1000, cost=1.5))
     assert 'cost: $1.5' in str(UsageRecord(total_tokens=1000, cost=1.5))
     assert 'total_tokens: 1,000' in str(UsageRecord(total_tokens=1000, cost=1.5))
 
-    assert 'timestamp: ' in str(MessageRecord(prompt='prompt', response='response'))
-    assert 'prompt: "prompt' in str(MessageRecord(prompt='prompt', response='response'))
-    assert 'response: "response' in str(MessageRecord(prompt='prompt', response='response'))
-    assert 'cost: ' in str(MessageRecord(prompt='prompt', response='response'))
-    assert 'total_tokens: ' in str(MessageRecord(prompt='prompt', response='response'))
+    assert 'timestamp: ' in str(ExchangeRecord(prompt='prompt', response='response'))
+    assert 'prompt: "prompt' in str(ExchangeRecord(prompt='prompt', response='response'))
+    assert 'response: "response' in str(ExchangeRecord(prompt='prompt', response='response'))
+    assert 'cost: ' in str(ExchangeRecord(prompt='prompt', response='response'))
+    assert 'total_tokens: ' in str(ExchangeRecord(prompt='prompt', response='response'))
 
-    assert 'timestamp: ' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
-    assert 'prompt: "prompt' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
-    assert 'response: "response' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
-    assert 'cost: $1.5' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
-    assert 'total_tokens: 1,000' in str(MessageRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
+    assert 'timestamp: ' in str(ExchangeRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
+    assert 'prompt: "prompt' in str(ExchangeRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
+    assert 'response: "response' in str(ExchangeRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
+    assert 'cost: $1.5' in str(ExchangeRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
+    assert 'total_tokens: 1,000' in str(ExchangeRecord(prompt='prompt', response='response', total_tokens=1000, cost=1.5))  # noqa
 
 def test_bug_where_costs_are_incorrect_after_changing_model_name_after_creation():  # noqa
     """We can't set cost_per_token during object creation, because the model might change."""

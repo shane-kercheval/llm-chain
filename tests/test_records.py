@@ -1,6 +1,6 @@
 """Tests Record objects in llm_chain.base.py."""
 import re
-from llm_chain.base import MessageRecord, EmbeddingsRecord, Record
+from llm_chain.base import ExchangeRecord, EmbeddingsRecord, Record
 
 
 def test_Record():  # noqa
@@ -29,7 +29,7 @@ def test_EmbeddingsMetaData():  # noqa
     assert record_1.uuid != record_2.uuid
 
 def test_MessageMetaData():  # noqa
-    record_1 = MessageRecord(
+    record_1 = ExchangeRecord(
         prompt='prompt',
         response='response',
         metadata={'model': 'test1'},
@@ -42,7 +42,7 @@ def test_MessageMetaData():  # noqa
     assert record_1.total_tokens == 10
     assert record_1.cost is None
 
-    record_2 = MessageRecord(
+    record_2 = ExchangeRecord(
         prompt='prompt',
         response='response',
         metadata={'model': 'test2'},

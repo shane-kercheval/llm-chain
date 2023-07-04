@@ -52,3 +52,21 @@ class DocSearchTemplate(PromptTemplate):
     def history(self) -> list[Record]:
         """Propagate the history from the underlying DocumentIndex object."""
         return self._doc_index.history
+
+    @property
+    def total_tokens(self) -> int | None:
+        """
+        Sums the `total_tokens` values across all Record objects (which contain that property)
+        returned by this object's `history` property (e.g. underlying records from DocumentIndex
+        objects; e.g. Embeddings).
+        """
+        return self.calculate_historical(name='total_tokens')
+
+    @property
+    def cost(self) -> float | None:
+        """
+        Sums the `cost` values across all Record objects (which contain that property)
+        returned by this object's `history` property (e.g. underlying records from DocumentIndex
+        objects; e.g. Embeddings).
+        """
+        return self.calculate_historical(name='cost')

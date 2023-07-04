@@ -10,7 +10,7 @@ The classes defined below are used to create different strategies for managing m
 They can be used with, for example, the OpenAIChat model by passing a MemoryBuffer object to the
 memory_strategy variable when initializing the model object.
 """
-from llm_chain.base import MemoryBuffer, MessageRecord
+from llm_chain.base import MemoryBuffer, ExchangeRecord
 
 
 class MemoryBufferMessageWindow(MemoryBuffer):
@@ -20,9 +20,9 @@ class MemoryBufferMessageWindow(MemoryBuffer):
         super().__init__()
         self.last_n_messages = last_n_messages
 
-    def __call__(self, history: list[MessageRecord]) -> list[MessageRecord]:
+    def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
         """
-        Takes a list of `MessageRecord` objects and returns the last `n` messages based on the
+        Takes a list of `ExchangeRecord` objects and returns the last `n` messages based on the
         `last_n_message` variable set during initialization.
         """
         if self.last_n_messages == 0:
@@ -37,9 +37,9 @@ class MemoryBufferTokenWindow(MemoryBuffer):
         super().__init__()
         self.last_n_tokens = last_n_tokens
 
-    def __call__(self, history: list[MessageRecord]) -> list[MessageRecord]:
+    def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
         """
-        Takes a list of `MessageRecord` objects and returns the last x messages where the
+        Takes a list of `ExchangeRecord` objects and returns the last x messages where the
         aggregated number of tokens is less than the `last_n_message` variable set during
         initialization.
         """

@@ -1,11 +1,11 @@
 """Test Session class."""
 from time import sleep
 import pytest
-from llm_chain.base import Chain, HistoricalUsageRecords, MessageRecord, Record, Session, \
+from llm_chain.base import Chain, UsageHistoryTracker, ExchangeRecord, Record, Session, \
     UsageRecord
 
 
-class MockHistoricalUsageRecords(HistoricalUsageRecords):
+class MockHistoricalUsageRecords(UsageHistoryTracker):
     """Object used to Mock a model used in a link."""
 
     def __init__(self, mock_id: str) -> None:
@@ -28,22 +28,22 @@ def test_Session():  # noqa
         session('test')
     assert session.history == []
     assert session.usage_history == []
-    assert session.message_history == []
-    assert session.cost is None
-    assert session.total_tokens is None
-    assert session.prompt_tokens is None
-    assert session.response_tokens is None
+    assert session.exchange_history == []
+    assert session.cost == 0
+    assert session.total_tokens == 0
+    assert session.prompt_tokens == 0
+    assert session.response_tokens == 0
     assert len(session) == 0
 
     session.append(chain=Chain(links=[]))
     assert session('test') is None
     assert session.history == []
     assert session.usage_history == []
-    assert session.message_history == []
-    assert session.cost is None
-    assert session.total_tokens is None
-    assert session.prompt_tokens is None
-    assert session.response_tokens is None
+    assert session.exchange_history == []
+    assert session.cost == 0
+    assert session.total_tokens == 0
+    assert session.prompt_tokens == 0
+    assert session.response_tokens == 0
     assert len(session) == 1
 
     # test chain with a link that doesn't have a history property
@@ -51,11 +51,11 @@ def test_Session():  # noqa
     assert session('test') == 'test'
     assert session.history == []
     assert session.usage_history == []
-    assert session.message_history == []
-    assert session.cost is None
-    assert session.total_tokens is None
-    assert session.prompt_tokens is None
-    assert session.response_tokens is None
+    assert session.exchange_history == []
+    assert session.cost == 0
+    assert session.total_tokens == 0
+    assert session.prompt_tokens == 0
+    assert session.response_tokens == 0
     assert len(session) == 2
 
     record_a = UsageRecord(metadata={'id': 'record_a'}, total_tokens=None, cost=None)
@@ -66,7 +66,7 @@ def test_Session():  # noqa
     sleep(0.001)
     record_d = Record(metadata={'id': 'record_e'})
     sleep(0.001)
-    record_e = MessageRecord(
+    record_e = ExchangeRecord(
         metadata={'id': 'record_e'},
         prompt='prompt',
         response='response',
@@ -82,11 +82,11 @@ def test_Session():  # noqa
     assert mock_id == 'mock_a'
     assert session.history == [record_a]
     assert session.usage_history == [record_a]
-    assert session.message_history == []
-    assert session.cost is None
-    assert session.total_tokens is None
-    assert session.prompt_tokens is None
-    assert session.response_tokens is None
+    assert session.exchange_history == []
+    assert session.cost == 0
+    assert session.total_tokens == 0
+    assert session.prompt_tokens == 0
+    assert session.response_tokens == 0
     assert len(session) == 3
 
     # if we add the same record it should be ignored
@@ -95,11 +95,11 @@ def test_Session():  # noqa
     assert mock_id == 'mock_a'
     assert session.history == [record_a]
     assert session.usage_history == [record_a]
-    assert session.message_history == []
-    assert session.cost is None
-    assert session.total_tokens is None
-    assert session.prompt_tokens is None
-    assert session.response_tokens is None
+    assert session.exchange_history == []
+    assert session.cost == 0
+    assert session.total_tokens == 0
+    assert session.prompt_tokens == 0
+    assert session.response_tokens == 0
     assert len(session) == 3
 
     return_value, mock_id = session(record_b)
@@ -107,11 +107,11 @@ def test_Session():  # noqa
     assert mock_id == 'mock_a'
     assert session.history == [record_a, record_b]
     assert session.usage_history == [record_a, record_b]
-    assert session.message_history == []
+    assert session.exchange_history == []
     assert session.cost == 0.01
     assert session.total_tokens == 100
-    assert session.prompt_tokens is None
-    assert session.response_tokens is None
+    assert session.prompt_tokens == 0
+    assert session.response_tokens == 0
     assert len(session) == 3
 
     # add record `e` out of order; later, ensure the correct order is returned
@@ -121,7 +121,7 @@ def test_Session():  # noqa
     assert mock_id == 'mock_b'
     assert session.history == [record_a, record_b, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
-    assert session.message_history == [record_e]
+    assert session.exchange_history == [record_e]
     assert session.cost == 0.51
     assert session.total_tokens == 203
     assert session.prompt_tokens == 34
@@ -134,7 +134,7 @@ def test_Session():  # noqa
     assert mock_id == 'mock_b'
     assert session.history == [record_a, record_b, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
-    assert session.message_history == [record_e]
+    assert session.exchange_history == [record_e]
     assert session.cost == 0.51
     assert session.total_tokens == 203
     assert session.prompt_tokens == 34
@@ -147,7 +147,7 @@ def test_Session():  # noqa
     assert mock_id == 'mock_b'
     assert session.history == [record_a, record_b, record_d, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
-    assert session.message_history == [record_e]
+    assert session.exchange_history == [record_e]
     assert session.cost == 0.51
     assert session.total_tokens == 203
     assert session.prompt_tokens == 34
@@ -160,7 +160,7 @@ def test_Session():  # noqa
     assert mock_id == 'mock_b'
     assert session.history == [record_a, record_b, record_c, record_d, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
-    assert session.message_history == [record_e]
+    assert session.exchange_history == [record_e]
     assert session.cost == 0.51
     assert session.total_tokens == 203
     assert session.prompt_tokens == 34

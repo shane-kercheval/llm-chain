@@ -3,8 +3,8 @@ from time import sleep
 import re
 import pytest
 import openai
-from llm_chain.utilities import Timer, create_hash, num_tokens, num_tokens_from_messages, \
-    retry_handler
+from llm_chain.utilities import Timer, create_hash, has_method, has_property, num_tokens, \
+    num_tokens_from_messages, retry_handler
 
 def test_timer_seconds():  # noqa
     with Timer() as timer:
@@ -17,7 +17,6 @@ def test_timer_seconds():  # noqa
     with pytest.raises(ValueError):  # noqa
         timer.formatted(units='days')
 
-
 def test_create_hash():  # noqa
     value_a = create_hash('Test value 1')
     assert value_a
@@ -27,10 +26,8 @@ def test_create_hash():  # noqa
     value_c = create_hash('Test value 1')
     assert value_c == value_a
 
-
 def test_num_tokens():  # noqa
     assert num_tokens(model_name='gpt-3.5-turbo', value="This should be six tokens.") == 6
-
 
 def test_num_tokens_from_messages():  # noqa
     # copied from https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
@@ -91,3 +88,23 @@ def test_retry_handler():  # noqa
         y='B',
     )
     assert actual_value == ('A', 'B')
+
+def test_has_method_has_property():  # noqa
+    class Fake:
+        def __init__(self) -> None:
+            self.variable_c = 'c'
+
+        def method_a(self) -> str:
+            return 'a'
+
+        @property
+        def property_b(self) -> str:
+            return 'b'
+
+    assert has_method(Fake(), 'method_a')
+    assert not has_method(Fake(), 'property_b')
+    assert not has_method(Fake(), 'variable_c')
+
+    assert not has_property(Fake(), 'method_a')
+    assert has_property(Fake(), 'property_b')
+    assert has_property(Fake(), 'variable_c')

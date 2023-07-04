@@ -1,8 +1,8 @@
 # `llm-chain`: simple and extensible LLM chaining
 
-A `chain` consists of `links`. Each link in the chain is a callable, which can be either a function or an object that implements the `__call__` method. **The output of one link serves as the input to the next link in the chain.** Pretty simple.
+A `chain` is an object that executes a sequence of tasks called `links`. Each link in the chain is a callable, which can be either a function or an object that implements the `__call__` method. **The output of one link serves as the input to the next link in the chain.** Pretty simple.
 
-Additionally, each link can track its own history, including messages sent/received and token usage/costs, through a `history` property that returns a list of `Record` objects. A `chain` aggregates and propagates the history of any link that has a `history` property, making it convenient to analyze costs or explore intermediate steps in the chain.
+Furthermore, a chain aggregates the history (prompts/responses, token usage, costs, etc) across all links. More specifically, it aggregiates all of the `Record` objects across any link that has a `history` property (which returns a list of Record objects; a Record object contains the metadata of an event like cost, tokens used, prompt, response, etc.). This functionality allows the chain to contain convenient properties that aggregate the costs and usage across all links of the chain, and can also be used to explore intermediate steps and events in the chain.
 
 ---
 
@@ -62,13 +62,13 @@ Cost:   $0.0007
 Tokens: 395
 ```
 
-Message History:
+Exchange History (a single exchange is a combination of a prompt and the corresponding response):
 
 ```python
-print(chain.message_history[0].prompt)
-print(chain.message_history[0].response)
-print(chain.message_history[1].prompt)
-print(chain.message_history[1].response)
+print(chain.exchange_history[0].prompt)
+print(chain.exchange_history[0].response)
+print(chain.exchange_history[1].prompt)
+print(chain.exchange_history[1].response)
 ```
 
 Output:
@@ -83,7 +83,7 @@ Summarize the following in two sentences: ```The meaning of life is a philosophi
 The meaning of life is a philosophical question that has been debated for centuries with no definitive answer. It varies depending on one's beliefs, values, and experiences and is ultimately a personal and subjective concept.
 ```
 
-Notice in the message history above (which is sent to the OpenAI model), that in the second link (the line with the lambda function) we don't actually have to use the response (`x` in lambda) since it's already in the history. I simply did that for illustrative purposes. We could replace the second link with `lambda _: "Summarize your previous answer in two sentences."`, which ignores the ouput of the first link (i.e. first response from chat model) and would actually reduce the number of tokens we use since we aren't passing the previous response in the new message. See the [chains.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) notebook for a full example.
+Notice in the exchange history above (which is sent to the OpenAI model), that in the second link (the line with the lambda function) we don't actually have to use the response (`x` in lambda) since it's already in the history. I simply did that for illustrative purposes. We could replace the second link with `lambda _: "Summarize your previous answer in two sentences."`, which ignores the ouput of the first link (i.e. first response from chat model) and would actually reduce the number of tokens we use since we aren't passing the previous response in the new exchange. See the [chains.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) notebook for a full example.
 
 ---
 
@@ -188,6 +188,7 @@ Additionally, we can track the history of the chain with the `chain.history` pro
 - [scraping-urls.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/scraping-urls.ipynb)
 - [splitting-documents.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/splitting-documents.ipynb)
 - [search-stack-overflow.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/search-stack-overflow.ipynb)
+- [conversation-between-models.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/conversation-between-models.ipynb)
 
 ---
 

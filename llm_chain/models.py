@@ -1,7 +1,7 @@
 """Contains models."""
 from collections.abc import Callable
-from llm_chain.base import ChatModel, Document, EmbeddingsRecord, EmbeddingsModel, MemoryBuffer, \
-    MessageRecord, StreamingEvent
+from llm_chain.base import PromptModel, Document, EmbeddingsRecord, EmbeddingsModel, \
+    MemoryBuffer, ExchangeRecord, StreamingEvent
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 from llm_chain.utilities import num_tokens, num_tokens_from_messages, retry_handler
 
@@ -62,7 +62,7 @@ class OpenAIEmbeddings(EmbeddingsModel):
         """
         return MODEL_COST_PER_TOKEN[self.model_name]
 
-class OpenAIChat(ChatModel):
+class OpenAIChat(PromptModel):
     """
     Wrapper around the OpenAI chat model (i.e. https://api.openai.com/v1/chat/completions
     endpoint). More info here: https://platform.openai.com/docs/api-reference/chat.
@@ -75,7 +75,7 @@ class OpenAIChat(ChatModel):
             max_tokens: int = 2000,
             system_message: str = 'You are a helpful assistant.',
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
-            memory_strategy: MemoryBuffer | Callable[[list[MessageRecord]], list[MessageRecord]] | None = None,  # noqa: E501
+            memory_strategy: MemoryBuffer | Callable[[list[ExchangeRecord]], list[ExchangeRecord]] | None = None,  # noqa: E501
             timeout: int = 10,
             ) -> None:
         """
@@ -96,8 +96,8 @@ class OpenAIChat(ChatModel):
                 Callable that takes a StreamingEvent object, which contains the streamed token (in
                 the `response` property and perhaps other metadata.
             memory_strategy:
-                MemoryBuffer object (or callable that takes a list of MessageRecord objects and
-                returns a list of MessageRecord objects. The underlying logic should return the
+                MemoryBuffer object (or callable that takes a list of ExchangeRecord objects and
+                returns a list of ExchangeRecord objects. The underlying logic should return the
                 messages sent to the OpenAI model.
             timeout:
                 timeout value passed to OpenAI model.
@@ -112,7 +112,7 @@ class OpenAIChat(ChatModel):
         self.timeout = timeout
         self._previous_memory = None
 
-    def _run(self, prompt: str) -> MessageRecord:
+    def _run(self, prompt: str) -> ExchangeRecord:
         """
         `openai.ChatCompletion.create` expects a list of messages with various roles (i.e. system,
         user, assistant). This function builds the list of messages based on the history of
@@ -121,7 +121,7 @@ class OpenAIChat(ChatModel):
         `memory_strategy` is passed in.
 
         The use of a streaming callback does not change the output returned from calling the object
-        (i.e. a MessageRecord object).
+        (i.e. a ExchangeRecord object).
         """
         import openai
         # build up messages from history
@@ -150,7 +150,7 @@ class OpenAIChat(ChatModel):
             )
             # extract the content/token from the streaming response and send to the callback
             # build up the message so that we can calculate usage/costs and send back the same
-            # MessageRecord response that we would return if we weren't streaming
+            # ExchangeRecord response that we would return if we weren't streaming
             def get_delta(chunk):  # noqa
                 delta = chunk['choices'][0]['delta']
                 if 'content' in delta:
@@ -184,7 +184,7 @@ class OpenAIChat(ChatModel):
         cost = (prompt_tokens * self.cost_per_token['input']) + \
             (completion_tokens * self.cost_per_token['output'])
 
-        return MessageRecord(
+        return ExchangeRecord(
             prompt=prompt,
             response=response_message,
             metadata={'model_name': self.model_name},
