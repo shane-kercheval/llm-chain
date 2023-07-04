@@ -273,7 +273,7 @@ class MemoryBuffer(ABC):
 class PromptTemplate(HistoricalUsageRecords):
     """
     A PromptTemplate is a callable object that takes a prompt (e.g. user query) as input and
-    returns a modified prompt. Each PromptTemplate is provided with the necessary information 
+    returns a modified prompt. Each PromptTemplate is provided with the necessary information
     during instantiation. For instance, if a template's purpose is to search for relevant
     documents, it is given the vector database when the object is created, rather than via the
     `__call__` method.
