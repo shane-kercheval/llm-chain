@@ -1,8 +1,8 @@
 """Test Session class."""
 from time import sleep
 import pytest
-from llm_chain.base import Chain, UsageHistoryTracker, ExchangeRecord, Record, Session, \
-    UsageRecord
+from llm_chain.base import Chain, EmbeddingRecord, UsageHistoryTracker, ExchangeRecord, Record, \
+    Session, UsageRecord
 
 
 class MockHistoricalUsageRecords(UsageHistoryTracker):
@@ -29,8 +29,10 @@ def test_Session():  # noqa
     assert session.history == []
     assert session.usage_history == []
     assert session.exchange_history == []
+    assert session.embedding_history == []
     assert session.cost == 0
     assert session.total_tokens == 0
+    assert session.embedding_tokens == 0
     assert session.prompt_tokens == 0
     assert session.response_tokens == 0
     assert len(session) == 0
@@ -40,8 +42,10 @@ def test_Session():  # noqa
     assert session.history == []
     assert session.usage_history == []
     assert session.exchange_history == []
+    assert session.embedding_history == []
     assert session.cost == 0
     assert session.total_tokens == 0
+    assert session.embedding_tokens == 0
     assert session.prompt_tokens == 0
     assert session.response_tokens == 0
     assert len(session) == 1
@@ -52,8 +56,10 @@ def test_Session():  # noqa
     assert session.history == []
     assert session.usage_history == []
     assert session.exchange_history == []
+    assert session.embedding_history == []
     assert session.cost == 0
     assert session.total_tokens == 0
+    assert session.embedding_tokens == 0
     assert session.prompt_tokens == 0
     assert session.response_tokens == 0
     assert len(session) == 2
@@ -75,6 +81,11 @@ def test_Session():  # noqa
         prompt_tokens=34,
         response_tokens=53,
     )
+    record_f = EmbeddingRecord(
+        metadata={'id': 'record_f'},
+        cost=0.7,
+        total_tokens=1_002,
+    )
 
     session.append(chain=Chain(links=[MockHistoricalUsageRecords(mock_id='mock_a')]))
     return_value, mock_id = session(record_a)
@@ -83,8 +94,10 @@ def test_Session():  # noqa
     assert session.history == [record_a]
     assert session.usage_history == [record_a]
     assert session.exchange_history == []
+    assert session.embedding_history == []
     assert session.cost == 0
     assert session.total_tokens == 0
+    assert session.embedding_tokens == 0
     assert session.prompt_tokens == 0
     assert session.response_tokens == 0
     assert len(session) == 3
@@ -96,8 +109,10 @@ def test_Session():  # noqa
     assert session.history == [record_a]
     assert session.usage_history == [record_a]
     assert session.exchange_history == []
+    assert session.embedding_history == []
     assert session.cost == 0
     assert session.total_tokens == 0
+    assert session.embedding_tokens == 0
     assert session.prompt_tokens == 0
     assert session.response_tokens == 0
     assert len(session) == 3
@@ -108,8 +123,10 @@ def test_Session():  # noqa
     assert session.history == [record_a, record_b]
     assert session.usage_history == [record_a, record_b]
     assert session.exchange_history == []
+    assert session.embedding_history == []
     assert session.cost == 0.01
     assert session.total_tokens == 100
+    assert session.embedding_tokens == 0
     assert session.prompt_tokens == 0
     assert session.response_tokens == 0
     assert len(session) == 3
@@ -122,8 +139,10 @@ def test_Session():  # noqa
     assert session.history == [record_a, record_b, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
     assert session.exchange_history == [record_e]
+    assert session.embedding_history == []
     assert session.cost == 0.51
     assert session.total_tokens == 203
+    assert session.embedding_tokens == 0
     assert session.prompt_tokens == 34
     assert session.response_tokens == 53
     assert len(session) == 4
@@ -135,8 +154,10 @@ def test_Session():  # noqa
     assert session.history == [record_a, record_b, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
     assert session.exchange_history == [record_e]
+    assert session.embedding_history == []
     assert session.cost == 0.51
     assert session.total_tokens == 203
+    assert session.embedding_tokens == 0
     assert session.prompt_tokens == 34
     assert session.response_tokens == 53
     assert len(session) == 4
@@ -148,8 +169,10 @@ def test_Session():  # noqa
     assert session.history == [record_a, record_b, record_d, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
     assert session.exchange_history == [record_e]
+    assert session.embedding_history == []
     assert session.cost == 0.51
     assert session.total_tokens == 203
+    assert session.embedding_tokens == 0
     assert session.prompt_tokens == 34
     assert session.response_tokens == 53
     assert len(session) == 4
@@ -161,8 +184,25 @@ def test_Session():  # noqa
     assert session.history == [record_a, record_b, record_c, record_d, record_e]
     assert session.usage_history == [record_a, record_b, record_e]
     assert session.exchange_history == [record_e]
+    assert session.embedding_history == []
     assert session.cost == 0.51
     assert session.total_tokens == 203
+    assert session.embedding_tokens == 0
+    assert session.prompt_tokens == 34
+    assert session.response_tokens == 53
+    assert len(session) == 4
+
+    # test EmbeddingRecord
+    return_value, mock_id = session(record_f)
+    assert return_value == record_f
+    assert mock_id == 'mock_b'
+    assert session.history == [record_a, record_b, record_c, record_d, record_e, record_f]
+    assert session.usage_history == [record_a, record_b, record_e, record_f]
+    assert session.exchange_history == [record_e]
+    assert session.embedding_history == [record_f]
+    assert session.cost == 0.51 + 0.7
+    assert session.total_tokens == 203 + 1_002
+    assert session.embedding_tokens == 1_002
     assert session.prompt_tokens == 34
     assert session.response_tokens == 53
     assert len(session) == 4

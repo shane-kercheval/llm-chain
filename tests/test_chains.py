@@ -212,6 +212,7 @@ def test_Chain_with_MockChat():  # noqa
     assert chat.total_tokens == 0
     assert chat.cost == 0
 
+    assert chain.embedding_tokens == 0
     assert chain.prompt_tokens == 0
     assert chain.response_tokens == 0
     assert chain.total_tokens == 0
@@ -389,6 +390,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     second_prompt = first_response
     second_response = "Response: " + second_prompt
 
+
     # the final result should be the response returned by the second invokation of chat()
     assert result == second_response
     # check that the prompts/responses got propegated through the chain
@@ -428,7 +430,11 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     ####
     # because the `chat` model is included twice in the chain; this check ensures we are not
     # double-counting the totals
+    assert chain.history == embeddings.history + chat.history
+    assert chain.exchange_history == chat.history
+    assert chain.embedding_history == embeddings.history
     assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
+    assert chain.embedding_tokens == embeddings.total_tokens
     assert chain.cost == chat.cost + embeddings.cost
 
     ####
@@ -526,7 +532,11 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     ####
     # because the `chat` model is included twice in the chain; this check ensures we are not
     # double-counting the totals
+    assert chain.history == embeddings.history + chat.history
+    assert chain.exchange_history == chat.history
+    assert chain.embedding_history == embeddings.history
     assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
+    assert chain.embedding_tokens == embeddings.total_tokens
     assert chain.cost == chat.cost + embeddings.cost
 
 def test_Chain_with_empty_history():  # noqa
@@ -542,7 +552,13 @@ def test_Chain_with_empty_history():  # noqa
 
     chain = Chain(links=[EmptyHistory()])
     assert chain.history == []
+    assert chain.exchange_history == []
+    assert chain.embedding_history == []
     chain = Chain(links=[NoneHistory()])
     assert chain.history == []
+    assert chain.exchange_history == []
+    assert chain.embedding_history == []
     chain = Chain(links=[EmptyHistory(), NoneHistory()])
     assert chain.history == []
+    assert chain.exchange_history == []
+    assert chain.embedding_history == []

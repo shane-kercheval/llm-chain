@@ -64,8 +64,8 @@ class ExchangeRecord(UsageRecord):
             f"uuid: {self.uuid}"
 
 
-class EmbeddingsRecord(UsageRecord):
-    """Record associated with an Embeddings request."""
+class EmbeddingRecord(UsageRecord):
+    """Record associated with an embedding request."""
 
 
 class StreamingEvent(Record):
@@ -95,26 +95,41 @@ class HistoryTracker(ABC):
         When an object doesn't have any history, it should return an empty list rather than `None`.
         """
 
-    def history_filter(self, record_types: type | tuple[type]) -> list[Record]:
+    def history_filter(self, record_types: type | tuple[type] | None = None) -> list[Record]:
         """
         Returns the history (list of Records objects) associated with an object based on the
         `record_types` provided.
 
         Args:
             record_types: either a single type or tuple of types indicating the type of Record
-            objects to return (e.g. `UsageRecord` or `(ExchangeRecord, EmbeddingsRecord)`).
+            objects to return (e.g. `UsageRecord` or `(ExchangeRecord, EmbeddingRecord)`).
         """
+        if not record_types:
+            return self.history
         if isinstance(record_types, type | tuple):
             return [x for x in self.history if isinstance(x, record_types)]
 
         raise ValueError(f"record_types not a valid type ({type(record_types)}) ")
 
-    def calculate_historical(self, name: str) -> int | float:
+    def calculate_historical(
+            self,
+            name: str,
+            record_types: type | tuple[type] | None = None) -> int | float:
         """
         For a given property `name` (e.g. `cost` or `total_tokens`), this function sums the values
         across all Record objects in the history, for any Record object that contains the property.
+
+        Args:
+            name:
+                the name of the property on the Record object to aggregate
+            record_types:
+                if provided, only the Record objects in `history` with the corresponding type(s)
+                are included in the aggregation
         """
-        records = [x for x in self.history if has_property(obj=x, property_name=name)]
+        records = [
+            x for x in self.history_filter(record_types=record_types)
+            if has_property(obj=x, property_name=name)
+        ]
         if records:
             return sum(getattr(x, name) or 0 for x in records)
         return 0
@@ -123,7 +138,7 @@ class HistoryTracker(ABC):
 class UsageHistoryTracker(HistoryTracker):
     """
     An object that tracks usage history i.e. `UsageRecord` objects (e.g. tokens and/or costs in a
-    chat or embeddings model).
+    chat or embedding model).
     """
 
     @property
@@ -145,9 +160,9 @@ class UsageHistoryTracker(HistoryTracker):
 
 class LargeLanguageModel(UsageHistoryTracker):
     """
-    A LargeLanguageModel, such as ChatGPT-3 or text-embedding-ada-002 (an embeddings model), is a
+    A LargeLanguageModel, such as ChatGPT-3 or text-embedding-ada-002 (an embedding model), is a
     class designed to be callable. Given specific inputs, such as prompts for chat-based models or
-    documents for embeddings models, it generates meaningful responses, which can be in the form of
+    documents for embedding models, it generates meaningful responses, which can be in the form of
     strings or documents.
 
     Additionally, a LargeLanguageModel is equipped with helpful auxiliary methods that enable
@@ -161,24 +176,24 @@ class LargeLanguageModel(UsageHistoryTracker):
         """Executes the chat request based on the value (e.g. message(s)) passed in."""
 
 
-class EmbeddingsModel(LargeLanguageModel):
-    """A model that produces embeddings for any given text input."""
+class EmbeddingModel(LargeLanguageModel):
+    """A model that produces an embedding for any given text input."""
 
     def __init__(self) -> None:
         super().__init__()
-        self._history: list[EmbeddingsRecord] = []
+        self._history: list[EmbeddingRecord] = []
 
     @abstractmethod
-    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsRecord]:
-        """Execute the embeddings request."""
+    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingRecord]:
+        """Execute the embedding request."""
 
     def __call__(self, docs: list[Document] | list[str] | Document | str) -> list[list[float]]:
         """
-        Executes the embeddings request based on the document(s) provided.
+        Executes the embedding request based on the document(s) provided.
 
         Args:
             docs:
-                Either a list of Documents, single Document, or str. Returns the embeddings that
+                Either a list of Documents, single Document, or str. Returns the embedding that
                 correspond to the doc(s).
         """
         if not docs:
@@ -195,13 +210,13 @@ class EmbeddingsModel(LargeLanguageModel):
         else:
             raise TypeError("Invalid type.")
 
-        embeddings, metadata = self._run(docs=docs)
+        embedding, metadata = self._run(docs=docs)
         self._history.append(metadata)
-        return embeddings
+        return embedding
 
     @property
-    def history(self) -> list[EmbeddingsRecord]:
-        """A list of EmbeddingsRecord that correspond to each embeddings request."""
+    def history(self) -> list[EmbeddingRecord]:
+        """A list of EmbeddingRecord that correspond to each embedding request."""
         return self._history
 
 
@@ -419,9 +434,9 @@ class HistoryAggregator(HistoryTracker):
         return self.history_filter(ExchangeRecord)
 
     @property
-    def embedding_history(self) -> list[EmbeddingsRecord]:
+    def embedding_history(self) -> list[EmbeddingRecord]:
         """Returns all records of type ExchangeRecord."""
-        return self.history_filter(EmbeddingsRecord)
+        return self.history_filter(EmbeddingRecord)
 
     @property
     def cost(self) -> int | None:
@@ -442,6 +457,12 @@ class HistoryAggregator(HistoryTracker):
     def response_tokens(self) -> int | None:
         """The total number of response tokens summed across all Record objects."""
         return self.calculate_historical(name='response_tokens')
+
+    @property
+    def embedding_tokens(self) -> int | None:
+        """The total number of embedding tokens summed across all EmbeddingRecord objects."""
+        return self.calculate_historical(name='total_tokens', record_types=EmbeddingRecord)
+
 
 
 class Chain(HistoryAggregator):
