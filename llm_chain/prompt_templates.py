@@ -1,18 +1,19 @@
 """
-A prompt_template is a callable object that takes a prompt (e.g. user query) as input and returns a
-modified prompt. Each prompt_template is given the information it needs when it is instantiated.
-So for example, if a template's job is to search for relevant documents, it's provided the vector
-database when the object is created (not via __call__).
+A "prompt-template" is a callable object that takes a prompt (e.g. user query) as input and returns
+a modified prompt. Each prompt-template is instantiated with the necessary information it requires.
+For instance, if a template's purpose is to search for relevant documents, it is provided with the
+vector database during object creation rather than through the `__call__` method.
 """
-from llm_chain.base import DocumentIndex, EmbeddingsRecord, PromptTemplate
+from llm_chain.base import DocumentIndex, Record, PromptTemplate
 from llm_chain.resources import PROMPT_TEMPLATE__INCLUDE_DOCUMENTS
 
 
 class DocSearchTemplate(PromptTemplate):
     """
-    DocSearchTemplate is a prompt-template that, based on the prompt provided when the object is
-    called (__call__), looks up the most similar documents via the `doc_index` provided and
-    includes all of the documents (i.e. the underlying content) in the prompt.
+    `DocSearchTemplate` is a prompt-template that, when called (`__call__`) with a prompt, searches
+    for the most similar documents using the provided `DocumentIndex` object. It then includes the
+    content of all of the retrieved documents in the modified prompt. The Document objects included
+    in the prompt can be retrieved via the `similar_docs` property.
     """
 
     def __init__(
@@ -48,6 +49,6 @@ class DocSearchTemplate(PromptTemplate):
             replace('{{prompt}}', prompt)
 
     @property
-    def history(self) -> list[EmbeddingsRecord]:
-        """TODO."""
+    def history(self) -> list[Record]:
+        """Propagate the history from the underlying DocumentIndex object."""
         return self._doc_index.history

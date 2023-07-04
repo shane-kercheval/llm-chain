@@ -83,6 +83,8 @@ Summarize the following in two sentences: ```The meaning of life is a philosophi
 The meaning of life is a philosophical question that has been debated for centuries with no definitive answer. It varies depending on one's beliefs, values, and experiences and is ultimately a personal and subjective concept.
 ```
 
+Notice in the message history above (which is sent to the OpenAI model), that in the second link (the line with the lambda function) we don't actually have to use the response (`x` in lambda) since it's already in the history. I simply did that for illustrative purposes. We could replace the second link with `lambda _: "Summarize your previous answer in two sentences."`, which ignores the ouput of the first link (i.e. first response from chat model) and would actually reduce the number of tokens we use since we aren't passing the previous response in the new message. See the [chains.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) notebook for a full example.
+
 ---
 
 # Example 2
@@ -103,7 +105,7 @@ In the code below, you can replace any step with your own implementation as long
 
 **Again, the key concept of a chain is simply that the output of one link is the input of the next link.** So, in the code below, you can replace any step with your own implementation as long as the input/output matches the link you replace.
 
-Something that may not be immediately obvious is the usage of the `Value` object, below. It serves as a convenient caching mechanism within the chain. The `Value` object is callable, allowing it to cache and return a value when provided as an argument. When called without a value, it retrieves and returns the cached value. In the given context, the `Value` object is utilized to cache the original question, pass it to the web search, and subsequently reintroduce the question into the chain and prompt template.
+Something that may not be immediately obvious is the usage of the `Value` object, below. It serves as a convenient caching mechanism within the chain. The `Value` object is callable, allowing it to cache and return the value when provided as an argument. When called without a value, it retrieves and returns the cached value. In the given context, the `Value` object is utilized to cache the original question, pass it to the web search, and subsequently reintroduce the question into the chain and prompt template.
 
 See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an in-depth explanation.
 

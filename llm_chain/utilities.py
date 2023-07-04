@@ -1,7 +1,8 @@
 
 """Helper functions and classes."""
-import hashlib
+import inspect
 import datetime
+import hashlib
 from functools import cache
 from collections.abc import Callable
 import tenacity
@@ -42,12 +43,12 @@ class Timer:
         raise ValueError("Only suppports seconds.")
 
 
-def create_hash(string_value: str) -> str:
-    """TODO."""
+def create_hash(value: str) -> str:
+    """Based on `value`, returns a hash."""
     # Create a new SHA-256 hash object
     hash_object = hashlib.sha256()
     # Convert the string value to bytes and update the hash object
-    hash_object.update(string_value.encode('utf-8'))
+    hash_object.update(value.encode('utf-8'))
     # Get the hexadecimal representation of the hash
     return hash_object.hexdigest()
 
@@ -119,3 +120,10 @@ def retry_handler(num_retries: int = 3, wait_fixed: int = 1) -> Callable:
         wait=tenacity.wait_fixed(wait_fixed),
         reraise=True,
     )
+
+
+def has_property(obj: object, property_name: str) -> bool:
+    """Returns True if the object has a property with the name `property_name`."""
+    if inspect.isfunction(obj):
+        return False
+    return hasattr(obj, property_name)
