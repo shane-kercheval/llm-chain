@@ -1,8 +1,8 @@
 # `llm-chain`: simple and extensible LLM chaining
 
-A `chain` consists of `links`. Each link in the chain is a callable, which can be either a function or an object that implements the `__call__` method. **The output of one link serves as the input to the next link in the chain.** Pretty simple.
+A `chain` represents a sequence of tasks called `links`. Each link in the chain is a callable, which can be either a function or an object that implements the `__call__` method. **The output of one link serves as the input to the next link in the chain.** Pretty simple.
 
-Additionally, each link can track its own history, including messages sent/received and token usage/costs, through a `history` property that returns a list of `Record` objects. A `chain` aggregates and propagates the history of any link that has a `history` property, making it convenient to analyze costs or explore intermediate steps in the chain.
+Furthermore, a chain object aggregates the history (messages, usage, etc) across all links. More specifically, it aggregiates all of the `Record` objects across any link that has a `history` property (which returns a list of Record objects; a Record object contains the metadata of an event like cost, tokens used, prompt, response, etc.). This functionality allows the chain to contain convenient properties that aggregate the costs and usage across all links of the chain, and can also be used to explore intermediate steps and events in the chain.
 
 ---
 
@@ -188,6 +188,7 @@ Additionally, we can track the history of the chain with the `chain.history` pro
 - [scraping-urls.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/scraping-urls.ipynb)
 - [splitting-documents.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/splitting-documents.ipynb)
 - [search-stack-overflow.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/search-stack-overflow.ipynb)
+- [conversation-between-models.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/conversation-between-models.ipynb)
 
 ---
 
