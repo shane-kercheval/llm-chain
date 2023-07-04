@@ -96,8 +96,8 @@ class OpenAIChat(PromptModel):
                 Callable that takes a StreamingEvent object, which contains the streamed token (in
                 the `response` property and perhaps other metadata.
             memory_strategy:
-                MemoryBuffer object (or callable that takes a list of MessageRecord objects and
-                returns a list of MessageRecord objects. The underlying logic should return the
+                MemoryBuffer object (or callable that takes a list of ExchangeRecord objects and
+                returns a list of ExchangeRecord objects. The underlying logic should return the
                 messages sent to the OpenAI model.
             timeout:
                 timeout value passed to OpenAI model.
@@ -121,7 +121,7 @@ class OpenAIChat(PromptModel):
         `memory_strategy` is passed in.
 
         The use of a streaming callback does not change the output returned from calling the object
-        (i.e. a MessageRecord object).
+        (i.e. a ExchangeRecord object).
         """
         import openai
         # build up messages from history
@@ -150,7 +150,7 @@ class OpenAIChat(PromptModel):
             )
             # extract the content/token from the streaming response and send to the callback
             # build up the message so that we can calculate usage/costs and send back the same
-            # MessageRecord response that we would return if we weren't streaming
+            # ExchangeRecord response that we would return if we weren't streaming
             def get_delta(chunk):  # noqa
                 delta = chunk['choices'][0]['delta']
                 if 'content' in delta:

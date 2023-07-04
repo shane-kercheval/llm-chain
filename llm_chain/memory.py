@@ -22,7 +22,7 @@ class MemoryBufferMessageWindow(MemoryBuffer):
 
     def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
         """
-        Takes a list of `MessageRecord` objects and returns the last `n` messages based on the
+        Takes a list of `ExchangeRecord` objects and returns the last `n` messages based on the
         `last_n_message` variable set during initialization.
         """
         if self.last_n_messages == 0:
@@ -39,7 +39,7 @@ class MemoryBufferTokenWindow(MemoryBuffer):
 
     def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
         """
-        Takes a list of `MessageRecord` objects and returns the last x messages where the
+        Takes a list of `ExchangeRecord` objects and returns the last x messages where the
         aggregated number of tokens is less than the `last_n_message` variable set during
         initialization.
         """

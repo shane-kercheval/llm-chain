@@ -236,12 +236,12 @@ class PromptModel(LargeLanguageModel):
 
     @property
     def history(self) -> list[ExchangeRecord]:
-        """A list of MessageRecord objects for tracking chat messages (prompt/response)."""
+        """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
         return self._history
 
     @property
     def previous_exchange(self) -> ExchangeRecord | None:
-        """Returns the last/previous message (MessageRecord) associated with the chat model."""
+        """Returns the last/previous message (ExchangeRecord) associated with the chat model."""
         if len(self.history) == 0:
             return None
         return self.history[-1]
@@ -415,12 +415,12 @@ class HistoryAggregator(HistoryTracker):
 
     @property
     def exchange_history(self) -> list[ExchangeRecord]:
-        """Returns all records of type MessageRecord."""
+        """Returns all records of type ExchangeRecord."""
         return self.history_filter(ExchangeRecord)
 
     @property
     def embedding_history(self) -> list[EmbeddingsRecord]:
-        """Returns all records of type MessageRecord."""
+        """Returns all records of type ExchangeRecord."""
         return self.history_filter(EmbeddingsRecord)
 
     @property
