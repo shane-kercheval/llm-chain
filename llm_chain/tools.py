@@ -75,7 +75,7 @@ def scrape_url(url: str) -> str:
 
 
 class SearchRecord(Record):
-    """Contains the search-query and search-requests (e.g. from a web-search)."""
+    """Contains the query and requests from a search request (e.g. from a web-search)."""
 
     query: str
     results: list[dict]

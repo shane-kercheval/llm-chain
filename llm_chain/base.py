@@ -10,7 +10,7 @@ from llm_chain.utilities import has_property
 
 
 class Record(BaseModel):
-    """An object typically used to track the history of a task/link."""
+    """Used to track the history of a task or link."""
 
     uuid: str = Field(default_factory=lambda: str(uuid4()))
     timestamp: str = Field(
@@ -23,7 +23,7 @@ class Record(BaseModel):
 
 
 class StreamingEvent(Record):
-    """An object that contains the information from a streaming event."""
+    """Contains the information from a streaming event."""
 
     response: str
 
@@ -41,9 +41,9 @@ class UsageRecord(Record):
 
 class MessageRecord(UsageRecord):
     """
-    A MessageMetaData is a single interaction with an LLM (i.e. a prompt and a response). It's used
-    to capture additional information about that interaction such as the number of tokens used and
-    the corresponding costs.
+    A MessageRecord represents a single interaction with an LLM, encompassing a prompt and its
+    corresponding response. Its purpose is to record details of the interaction, including the
+    token count and associated costs.
     """
 
     prompt: str
@@ -65,8 +65,8 @@ class EmbeddingsRecord(UsageRecord):
 
 class Document(BaseModel):
     """
-    A document consist of content/text and metadata. It can represent anything from file, web-page,
-    or subset/chunk of a whole document.
+    A Document comprises both content (text) and metadata, allowing it to represent a wide range of
+    entities such as files, web pages, or even specific sections within a larger document.
     """
 
     content: str
@@ -110,12 +110,15 @@ class HistoricalUsageRecords(HistoricalData):
 
 class LargeLanguageModel(HistoricalUsageRecords):
     """
-    A Model (e.g. ChatGPT-3, or `text-embedding-ada-002` (embeddings model)) is a class that is
-    callable and given some input (e.g. prompt (chat) or documents (embeddings)) and returns a
-    response (e.g. string or documents).
-    It has helper methods that track the history/usage of the how an instantiated model
-    has been used (e.g. processing time, tokens used, or costs incurred; although not all models
-    have direct costs like ChatGPT e.g. local models).
+    A LargeLanguageModel, such as ChatGPT-3 or text-embedding-ada-002 (an embeddings model), is a
+    class designed to be callable. Given specific inputs, such as prompts for chat-based models or
+    documents for embeddings models, it generates meaningful responses, which can be in the form of
+    strings or documents.
+
+    Additionally, a LargeLanguageModel is equipped with helpful auxiliary methods that enable
+    tracking and analysis of its usage history. These methods provide valuable insights into
+    metrics like token consumption and associated costs. It's worth noting that not all models
+    incur direct costs, as is the case with ChatGPT; for example, offline models.
     """
 
     @abstractmethod
@@ -129,7 +132,7 @@ class LargeLanguageModel(HistoricalUsageRecords):
 
 
 class EmbeddingsModel(LargeLanguageModel):
-    """A model that produces embeddings for a given piece of text."""
+    """A model that produces embeddings for any given text input."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -141,7 +144,7 @@ class EmbeddingsModel(LargeLanguageModel):
 
     def __call__(self, docs: list[Document] | list[str] | Document | str) -> list[list[float]]:
         """
-        Executes the embeddings request based on the document(s).
+        Executes the embeddings request based on the document(s) provided.
 
         Args:
             docs:
@@ -174,10 +177,9 @@ class EmbeddingsModel(LargeLanguageModel):
 
 class ChatModel(LargeLanguageModel):
     """
-    A Model (e.g. ChatGPT-3) is a class that is callable and invoked with a string and returns a
-    string. It has helper methods that track the history/usage of the how an instantiated model
-    has been used (e.g. processing time, tokens used, or costs incurred; although not all models
-    have direct costs like ChatGPT).
+    The ChatModel class represents a callable entity, such as ChatGPT-3, that takes a string as
+    input and returns a string. It provides auxiliary methods to monitor the usage history of an
+    instantiated model, including metrics like tokens used or costs incurred.
     """
 
     def __init__(self):
@@ -191,10 +193,10 @@ class ChatModel(LargeLanguageModel):
 
     def __call__(self, prompt: str) -> str:
         """
-        Executes the chat request based on the the prompt (string) and returns a response (string).
+        Executes a chat request based on the given prompt and returns a response.
 
         Args:
-            prompt: the string prompt/question to the model.
+            prompt: The prompt or question to be sent to the model.
         """
         response = self._run(prompt)
         self._history.append(response)
@@ -202,12 +204,12 @@ class ChatModel(LargeLanguageModel):
 
     @property
     def history(self) -> list[MessageRecord]:
-        """A list of MessageRecord for tracking chat messages (prompt/response)."""
+        """A list of MessageRecord objects for tracking chat messages (prompt/response)."""
         return self._history
 
     @property
     def previous_message(self) -> MessageRecord | None:
-        """Returns the last/previous message (MessageMetaData) associated with the chat model."""
+        """Returns the last/previous message (MessageRecord) associated with the chat model."""
         if len(self.history) == 0:
             return None
         return self.history[-1]
@@ -270,10 +272,11 @@ class MemoryBuffer(ABC):
 
 class PromptTemplate(HistoricalUsageRecords):
     """
-    A prompt_template is a callable object that takes a prompt (e.g. user query) as input and
-    returns a modified prompt. Each prompt_template is given the information it needs when it is
-    instantiated. So for example, if a template's job is to search for relevant documents, it's
-    provided the vector database when the object is created (not via __call__).
+    A PromptTemplate is a callable object that takes a prompt (e.g. user query) as input and
+    returns a modified prompt. Each PromptTemplate is provided with the necessary information 
+    during instantiation. For instance, if a template's purpose is to search for relevant
+    documents, it is given the vector database when the object is created, rather than via the
+    `__call__` method.
     """
 
     @abstractmethod
@@ -288,11 +291,12 @@ class PromptTemplate(HistoricalUsageRecords):
 
 class DocumentIndex(HistoricalUsageRecords):
     """
-    A DocumentIndex is simply a way of adding and searching for `Document` objects. For example, it
-    could be a wrapper around chromadb.
+    A `DocumentIndex` is a mechanism for adding and searching for `Document` objects. It can be
+    thought of as a wrapper around chromadb or any other similar database.
 
-    A DocumentIndex should propagate any total_tokens or total_cost used by the underlying models
-    (e.g. if it uses an EmbeddingModel), or return None if not applicable.
+    A `DocumentIndex` object should propagate any `total_tokens` or `total_cost` used by the
+    underlying models, such as an `EmbeddingModel`. If these metrics are not applicable, the
+    `DocumentIndex` should return `None`.
     """
 
     def __init__(self, n_results: int = 3) -> None:
@@ -308,22 +312,23 @@ class DocumentIndex(HistoricalUsageRecords):
             value: Document | str | list[Document],
             n_results: int | None = None) -> list[Document] | None:
         """
-        When the object is called, either the `add` method will be called (if the `value` passed
-        in is a list) or the `search` method will be called (if the `value` passed in is a string
-        or Document). This functionality allows to object to be added to a chain and either add
-        documents to the index or search for documents based on input.
+        When the object is called, it can either invoke the `add` method (if the `value` passed in
+        is a list) or the `search` method (if the `value` passed in is a string or Document). This
+        flexible functionality allows the object to be seamlessly integrated into a chain, enabling
+        the addition of documents to the index or searching for documents, based on input.
 
         Args:
             value:
-                Similar Documents will be returned based on this value. See description above.
+                The value used to determine and retrieve similar Documents.
+                Please refer to the description above for more details.
             n_results:
-                The maximum number of results to return. If provided, it will override
-                `n_results` based to `__init__`.
+                The maximum number of results to be returned. If provided, it overrides the
+                `n_results` parameter specified during initialization (`__init__`).
 
         Returns:
-            If `value` is a list (and the `add` function is called), this method returns None.
-            If `value` is a string or Document (and the `search` function) is called, this method
-            will return the serach results
+            If `value` is a list (i.e. the `add` function is called), this method returns None.
+            If `value` is a string or Document (i.e the `search` function is called), this method
+            returns the search results.
         """
         if isinstance(value, list):
             return self.add(docs=value)
@@ -348,10 +353,10 @@ class DocumentIndex(HistoricalUsageRecords):
 
         Args:
             value:
-                Similar Documents will be returned based on this value.
+                The value used to determine and retrieve similar Documents.
             n_results:
-                The maximum number of results to return. If provided, it will override
-                `n_results` based to `__init__`.
+                The maximum number of results to be returned. If provided, it overrides the
+                `n_results` parameter specified during initialization (`__init__`).
         """
         if isinstance(value, str):
             value = Document(content=value)
@@ -365,9 +370,9 @@ class DocumentIndex(HistoricalUsageRecords):
 
 class Value:
     """
-    The Value class serves as a convenient caching mechanism within the chain. The `Value` object
-    is callable, allowing it to cache and return the value when provided as an argument. When
-    called without a value, it retrieves and returns the cached value.
+    The Value class provides a convenient caching mechanism within the chain.
+    The `Value` object is callable, allowing it to cache and return values when provided as
+    arguments. When called without a value, it retrieves and returns the cached value.
     """
 
     def __init__(self):
@@ -375,9 +380,9 @@ class Value:
 
     def __call__(self, value: object | None = None) -> object:
         """
-        When provided a `value` that value is cached and returned.
-        When no `value` is provided, the previously cached value is returned (or None if no value
-        has been cached).
+        When a `value` is provided, it gets cached and returned.
+        If no `value` is provided, the previously cached value is returned (or None if no value has
+        been cached).
         """
         if value:
             self.value = value
@@ -386,8 +391,8 @@ class Value:
 
 class LinkAggregator(ABC):
     """
-    A LinkAggregator (e.g. a Chain) is an object that aggregates the usage/costs across all objects
-    associated with the object (e.g. across all links).
+    A LinkAggregator is an object that aggregates the usage and costs across all associated objects
+    (e.g. across the links of a Chain object).
     """
 
     @property
@@ -464,13 +469,13 @@ class LinkAggregator(ABC):
 
 class Chain(LinkAggregator):
     """
-    A `chain` consists of `links`. Each link in the chain is a callable, which can be either a
-    function or an object that implements the `__call__` method.
+    A Chain object is a collection of `links`. Each link in the chain is a callable, which can be
+    either a function or an object that implements the `__call__` method.
 
     The output of one link serves as the input to the next link in the chain.
 
     Additionally, each link can track its own history, including messages sent/received and token
-    usage/costs, through a `history` property that returns a list of `Record` objects. A `chain`
+    usage/costs, through a `history` property that returns a list of `Record` objects. A Chain
     aggregates and propagates the history of any link that has a `history` property, making it
     convenient to analyze costs or explore intermediate steps in the chain.
     """
@@ -486,9 +491,12 @@ class Chain(LinkAggregator):
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """
-        Executes the chain by passing the value provided to the first link. The output of the first
-        link is passed as the input of the next link, which continues until all of the links in
-        the Chain have executed. The output from the last link is returned.
+        Executes the chain by passing the provided value to the first link. The output of each link
+        is passed as the input to the next link, creating a sequential execution of all links in
+        the chain.
+
+        The execution continues until all links in the chain have been executed. The final output
+        from the last link is then returned.
         """
         if not self._links:
             return None
@@ -501,8 +509,8 @@ class Chain(LinkAggregator):
     @property
     def history(self) -> list[Record]:
         """
-        Aggregates the `history` across all links in the Chain. It ensures that if a link is
-        added multiple times to the Chain (e.g. a chat model with multiple steps) that the
+        Aggregates the `history` across all links in the Chain. This method ensures that if a link
+        is added multiple times to the Chain (e.g. a chat model with multiple steps), the
         underlying Record objects associated with that link's `history` are not duplicated.
         """
         histories = [link.history for link in self._links if _has_history(link)]
@@ -523,9 +531,9 @@ class Chain(LinkAggregator):
 
 class Session(LinkAggregator):
     """
-    A Session is a way to aggregate multiple Chain objects. For example, if chains are dynamically
-    created based on user input, then we need a way to track all of the Chains within the same
-    session. Calling a Session will call the last chain added to the session.
+    A Session is used to aggregate multiple Chain objects. It provides a way to track and manage
+    multiple Chains within the same session. When calling a Session, it will execute the last chain
+    that was added to the session.
     """
 
     def __init__(self, chains: list[Chain] | None = None):
@@ -542,9 +550,9 @@ class Session(LinkAggregator):
 
     def append(self, chain: Chain) -> None:
         """
-        Add/append a new `chain` to the list of chains in the session. If the session object is
-        called (i.e. __call__), the session will foroward the call to the new chain object (i.e.
-        the last chain added in the list).
+        Add or append a new Chain object to the list of chains in the session. If the session
+        object is called (i.e. __call__), the session will forward the call to the new chain object
+        (i.e. the last chain added in the list).
         """
         self._chains.append(chain)
 
@@ -553,6 +561,11 @@ class Session(LinkAggregator):
 
     @property
     def history(self) -> list[Record]:
+        """
+        Aggregates the `history` across all Chain objects in the Session. This method ensures that
+        if a link is added multiple times to the Session, the underlying Record objects associated
+        with that link's `history` are not duplicated.
+        """
         """
         Aggregates the `history` across all Chains in the session. It ensures that if the same
         object (e.g. chat model) is added multiple times to the Session, that the underlying Record
