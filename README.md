@@ -2,7 +2,7 @@
 
 A `chain` is an object that executes a sequence of tasks called `links`. Each link in the chain is a callable, which can be either a function or an object that implements the `__call__` method. **The output of one link serves as the input to the next link in the chain.** Pretty simple.
 
-Furthermore, a chain aggregates the history (prompts/responses, token usage, costs, etc) across all links. More specifically, it aggregiates all of the `Record` objects across any link that has a `history` property (which returns a list of Record objects; a Record object contains the metadata of an event like cost, tokens used, prompt, response, etc.). This functionality allows the chain to contain convenient properties that aggregate the costs and usage across all links of the chain, and can also be used to explore intermediate steps and events in the chain.
+Furthermore, a chain aggregates the history (prompts/responses, token usage, costs, etc.) across all links. More specifically, it aggregates all of the `Record` objects across any link that has a `history` property (which returns a list of Record objects; a Record object contains the metadata of an event such as costs, tokens used, prompt, response, etc.). This functionality allows the chain to contain convenient properties that aggregate the costs and usage across all links of the chain, and can also be used to explore intermediate steps and events in the chain.
 
 ---
 
@@ -167,22 +167,22 @@ The meaning of life is subjective and each person must answer it for themselves;
 We can also track costs:
 
 ```python
-print(f"Cost:           ${chain.cost:.4f}")
-print(f"Total Tokens:    {chain.total_tokens:,}")
-print(f"Prompt Tokens:   {chain.prompt_tokens:,}")
-print(f"Response Tokens: {chain.response_tokens:,}")
+print(f"Cost:            ${chain.cost:.4f}")
+print(f"Total Tokens:     {chain.total_tokens:,}")
+print(f"Prompt Tokens:    {chain.prompt_tokens:,}")
+print(f"Response Tokens:  {chain.response_tokens:,}")
+print(f"Embedding Tokens: {chain.embedding_tokens:,}")
 ```
 
 Output:
 
 ```
-Cost:           $0.00552
-Total Tokens:    44,369
-Prompt Tokens:   567
-Response Tokens: 153
+Cost:              $0.00449
+Total Tokens:       37,515
+Prompt Tokens:      432
+Response Tokens:    70
+Embedding Tokens:   37,013
 ```
-
-Note that, in this case, "Total Tokens" also include tokens used by the OpenAIEmbedding model.
 
 Additionally, we can track the history of the chain with the `chain.history` property. See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an example.
 
