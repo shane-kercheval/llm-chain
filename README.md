@@ -141,8 +141,6 @@ Here's an example of using a chain to perform the following series of tasks:
 - Save the chunks to a document index (i.e. vector database).
 - Create a prompt that includes the original question and the most relevant chunks.
 - Send the prompt to the chat model.
-- Create a second prompt that asks the model to summarize the previous response.
-- Send the second prompt to the chat model.
 
 **Again, the key concept of a chain is simply that the output of one link is the input of the next link.** So, in the code below, you can replace any step with your own implementation as long as the input/output matches the link you replace.
 
