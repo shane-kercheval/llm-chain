@@ -64,16 +64,27 @@ Cost:           $0.00063
 Total Tokens:    375
 Prompt Tokens:   239
 Response Tokens: 136
-
 ```
 
-Exchange History (a single exchange is a combination of a prompt and the corresponding response):
+History:
 
 ```python
-print(chain.exchange_history[0].prompt)
-print(chain.exchange_history[0].response)
-print(chain.exchange_history[1].prompt)
-print(chain.exchange_history[1].response)
+[type(x) for x in chain.history]
+```
+
+Output:
+
+An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (prompt) and its corresponding output (response), along with other properties like cost and token usage.
+
+```
+[llm_chain.base.ExchangeRecord, llm_chain.base.ExchangeRecord]
+```
+
+```python
+print(chain.history[0].prompt)
+print(chain.history[0].response)
+print(chain.history[1].prompt)
+print(chain.history[1].response)
 ```
 
 Output:
