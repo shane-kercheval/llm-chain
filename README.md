@@ -36,9 +36,12 @@ from llm_chain.models import OpenAIChat
 
 chat_model = OpenAIChat(model_name='gpt-3.5-turbo')
 
-def prompt_templ
-prompt_template = lambda prompt: f"Write a python function for: ```{prompt}```"
-prompt_extract_code = lambda _: "Return only the function from the previous answer, without text"
+def prompt_template(prompt: str) -> str:
+    return f"Write a python function for: ```{prompt}```"
+
+def prompt_extract_code(_: str) -> str:
+    # `_` ignores the input from previous chain
+    return "Return only the function from the previous answer, without text"
 
 chain = Chain(links=[
     prompt_template,
