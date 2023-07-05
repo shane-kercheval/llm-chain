@@ -53,7 +53,7 @@ response = chain("adding two numbers")
 print(response)
 ```
 
-Response:
+Output:
 
 ```python
 def add_numbers(num1, num2):
