@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from dotenv import load_dotenv
 
-from llm_chain.base import PromptModel, Document, EmbeddingsRecord, EmbeddingsModel, \
+from llm_chain.base import PromptModel, Document, EmbeddingRecord, EmbeddingModel, \
     ExchangeRecord
 
 load_dotenv()
@@ -57,7 +57,7 @@ class MockChat(PromptModel):
         )
 
 
-class MockRandomEmbeddings(EmbeddingsModel):
+class MockRandomEmbeddings(EmbeddingModel):
     """Used for unit tests to mock the behavior of an LLM."""
 
     def __init__(
@@ -68,13 +68,13 @@ class MockRandomEmbeddings(EmbeddingsModel):
         self.token_counter = token_counter
         self.cost_per_token = cost_per_token
 
-    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsRecord]:
+    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingRecord]:
         rng = np.random.default_rng()
         embeddings = [rng.uniform(low=-2, high=2, size=(50)).tolist() for _ in docs]
         total_tokens = sum(self.token_counter(x.content) for x in docs) \
             if self.token_counter else None
         cost = total_tokens * self.cost_per_token if self.cost_per_token else None
-        return embeddings, EmbeddingsRecord(
+        return embeddings, EmbeddingRecord(
             total_tokens=total_tokens,
             cost=cost,
         )
@@ -91,7 +91,7 @@ def fake_docs_abcd() -> list[Document]:
     ]
 
 
-class MockABCDEmbeddings(EmbeddingsModel):
+class MockABCDEmbeddings(EmbeddingModel):
     """
     Used for unit tests to mock the behavior of an LLM.
 
@@ -109,14 +109,14 @@ class MockABCDEmbeddings(EmbeddingsModel):
             4: [4, 4, 4, 4, 4],
         }
 
-    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingsRecord]:
+    def _run(self, docs: list[Document]) -> tuple[list[Document], EmbeddingRecord]:
         if self._next_lookup_index:
             embeddings = [self.lookup[self._next_lookup_index]]
         else:
             embeddings = [self.lookup[x.metadata['id']] for x in docs]
         total_tokens = sum(len(x.content) for x in docs)
         cost = total_tokens * self.cost_per_token
-        return embeddings, EmbeddingsRecord(
+        return embeddings, EmbeddingRecord(
             total_tokens=total_tokens,
             cost=cost,
             metadata={'content': [x.content for x in docs]},

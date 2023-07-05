@@ -6,7 +6,7 @@ is ChromaDB which stores/retrieves documents based on embeddings, which allow fo
 """
 import chromadb
 from chromadb.api.models.Collection import Collection
-from llm_chain.base import Document, DocumentIndex, EmbeddingsModel, EmbeddingsRecord
+from llm_chain.base import Document, DocumentIndex, EmbeddingModel, EmbeddingRecord
 from llm_chain.utilities import create_hash
 
 
@@ -27,7 +27,7 @@ class ChromaDocumentIndex(DocumentIndex):
 
     def __init__(
             self,
-            embeddings_model: EmbeddingsModel | None = None,
+            embeddings_model: EmbeddingModel | None = None,
             collection: Collection | None = None,
             n_results: int = 3) -> None:
         super().__init__(n_results=n_results)
@@ -87,14 +87,14 @@ class ChromaDocumentIndex(DocumentIndex):
         return similar_docs
 
     @property
-    def history(self) -> list[EmbeddingsRecord]:
+    def history(self) -> list[EmbeddingRecord]:
         """Propagates the history of any underlying models (e.g. embeddings model)."""
         return self._emb_model.history if self._emb_model else []
 
     @property
     def total_tokens(self) -> int | None:
         """
-        Sums the `total_tokens` values across all EmbeddingsRecord objects returned by this
+        Sums the `total_tokens` values across all EmbeddingRecord objects returned by this
         object's `history` property.
         """
         return self.calculate_historical(name='total_tokens')
@@ -102,7 +102,7 @@ class ChromaDocumentIndex(DocumentIndex):
     @property
     def cost(self) -> float | None:
         """
-        Sums the `cost` values across all EmbeddingsRecord objects returned by this object's
+        Sums the `cost` values across all EmbeddingRecord objects returned by this object's
         `history` property.
         """
         return self.calculate_historical(name='cost')

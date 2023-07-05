@@ -1,8 +1,8 @@
 """tests llm_chain/models.py."""
 import pytest
-from llm_chain.base import Document, EmbeddingsModel, EmbeddingsRecord, ExchangeRecord, Record, \
+from llm_chain.base import Document, EmbeddingModel, EmbeddingRecord, ExchangeRecord, Record, \
     StreamingEvent, UsageRecord
-from llm_chain.models import OpenAIChat, OpenAIEmbeddings
+from llm_chain.models import OpenAIChat, OpenAIEmbedding
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 from tests.conftest import MockChat, MockRandomEmbeddings
 
@@ -393,10 +393,10 @@ def test_OpenAIChat_streaming_response_matches_non_streaming():  # noqa
     assert non_streaming_chat.total_tokens == streaming_chat.total_tokens
     assert non_streaming_chat.cost == streaming_chat.cost
 
-def test_EmbeddingsModel__called_with_different_types():  # noqa
-    class MockEmbeddings(EmbeddingsModel):
-        def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsRecord]:
-            return docs, EmbeddingsRecord(metadata={'content': docs})
+def test_EmbeddingModel__called_with_different_types():  # noqa
+    class MockEmbeddings(EmbeddingModel):
+        def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingRecord]:
+            return docs, EmbeddingRecord(metadata={'content': docs})
 
     embeddings = MockEmbeddings()
     assert embeddings(None) == []
@@ -428,7 +428,7 @@ def test_EmbeddingsModel__called_with_different_types():  # noqa
     assert result == expected_value
     assert embeddings.history[3].metadata == {'content': expected_value}
 
-def test_EmbeddingsModel__no_costs():  # noqa
+def test_EmbeddingModel__no_costs():  # noqa
     model = MockRandomEmbeddings(token_counter=len, cost_per_token=None)
     assert model.cost == 0
     assert model.total_tokens == 0
@@ -453,7 +453,7 @@ def test_EmbeddingsModel__no_costs():  # noqa
 
     assert len(model._history) == 1
     first_record = model._history[0]
-    assert isinstance(first_record, EmbeddingsRecord)
+    assert isinstance(first_record, EmbeddingRecord)
     assert first_record.total_tokens == expected_tokens
     assert first_record.cost is None
     assert first_record.uuid
@@ -485,7 +485,7 @@ def test_EmbeddingsModel__no_costs():  # noqa
 
     assert len(model._history) == 2
     first_record = model._history[0]
-    assert isinstance(first_record, EmbeddingsRecord)
+    assert isinstance(first_record, EmbeddingRecord)
     assert first_record.total_tokens == previous_tokens
     assert first_record.cost is None
     assert first_record.uuid
@@ -493,7 +493,7 @@ def test_EmbeddingsModel__no_costs():  # noqa
     assert first_record.timestamp
 
     second_record = model._history[1]
-    assert isinstance(second_record, EmbeddingsRecord)
+    assert isinstance(second_record, EmbeddingRecord)
     assert second_record.total_tokens == expected_tokens
     assert second_record.cost is None
     assert second_record.uuid
@@ -503,7 +503,7 @@ def test_EmbeddingsModel__no_costs():  # noqa
     assert model.total_tokens == previous_tokens + expected_tokens
     assert model.cost == 0
 
-def test_EmbeddingsModel__with_costs():  # noqa
+def test_EmbeddingModel__with_costs():  # noqa
     cost_per_token = 3
     model = MockRandomEmbeddings(token_counter=len, cost_per_token=cost_per_token)
     assert model.cost == 0
@@ -531,7 +531,7 @@ def test_EmbeddingsModel__with_costs():  # noqa
 
     assert len(model._history) == 1
     first_record = model._history[0]
-    assert isinstance(first_record, EmbeddingsRecord)
+    assert isinstance(first_record, EmbeddingRecord)
     assert first_record.total_tokens == expected_tokens
     assert first_record.cost == expected_cost
     assert first_record.uuid
@@ -566,7 +566,7 @@ def test_EmbeddingsModel__with_costs():  # noqa
 
     assert len(model._history) == 2
     first_record = model._history[0]
-    assert isinstance(first_record, EmbeddingsRecord)
+    assert isinstance(first_record, EmbeddingRecord)
     assert first_record.total_tokens == previous_tokens
     assert first_record.cost == previous_cost
     assert first_record.uuid
@@ -574,7 +574,7 @@ def test_EmbeddingsModel__with_costs():  # noqa
     assert first_record.timestamp
 
     second_record = model._history[1]
-    assert isinstance(second_record, EmbeddingsRecord)
+    assert isinstance(second_record, EmbeddingRecord)
     assert second_record.total_tokens == expected_tokens
     assert second_record.cost == expected_cost
     assert second_record.uuid
@@ -584,8 +584,8 @@ def test_EmbeddingsModel__with_costs():  # noqa
     assert model.total_tokens == previous_tokens + expected_tokens
     assert model.cost == previous_cost + expected_cost
 
-def test_OpenAIEmbeddings():  # noqa
-    model = OpenAIEmbeddings(model_name='text-embedding-ada-002')
+def test_OpenAIEmbedding():  # noqa
+    model = OpenAIEmbedding(model_name='text-embedding-ada-002')
     assert model.cost == 0
     assert model.total_tokens == 0
 
@@ -610,7 +610,7 @@ def test_OpenAIEmbeddings():  # noqa
 
     assert len(model._history) == 1
     previous_record = model._history[0]
-    assert isinstance(previous_record, EmbeddingsRecord)
+    assert isinstance(previous_record, EmbeddingRecord)
     assert previous_record.total_tokens > 0
     assert previous_record.cost == expected_cost
     assert previous_record.uuid
@@ -643,7 +643,7 @@ def test_OpenAIEmbeddings():  # noqa
 
     assert len(model._history) == 2
     first_record = model._history[0]
-    assert isinstance(first_record, EmbeddingsRecord)
+    assert isinstance(first_record, EmbeddingRecord)
     assert first_record.total_tokens == previous_tokens
     assert first_record.cost == previous_cost
     assert first_record.uuid == previous_record.uuid
@@ -651,7 +651,7 @@ def test_OpenAIEmbeddings():  # noqa
     assert first_record.metadata['model_name'] == 'text-embedding-ada-002'
 
     previous_record = model._history[1]
-    assert isinstance(previous_record, EmbeddingsRecord)
+    assert isinstance(previous_record, EmbeddingRecord)
     assert previous_record.total_tokens > 0
     assert previous_record.cost == expected_cost
     assert previous_record.uuid
@@ -695,7 +695,7 @@ def test_bug_where_costs_are_incorrect_after_changing_model_name_after_creation(
     model.model_name = 'gpt-4'
     assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-4']
 
-    model = OpenAIEmbeddings(model_name='gpt-3.5-turbo')
+    model = OpenAIEmbedding(model_name='gpt-3.5-turbo')
     assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-3.5-turbo']
     model.model_name = 'gpt-4'
     assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-4']

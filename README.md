@@ -116,13 +116,13 @@ See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examp
 
 ```python
 from llm_chain.base import Document, Chain, Value
-from llm_chain.models import OpenAIEmbeddings, OpenAIChat
+from llm_chain.models import OpenAIEmbedding, OpenAIChat
 from llm_chain.tools import DuckDuckGoSearch, scrape_url, split_documents
 from llm_chain.indexes import ChromaDocumentIndex
 from llm_chain.prompt_templates import DocSearchTemplate
 
 duckduckgo_search = DuckDuckGoSearch(top_n=3)
-embeddings_model = OpenAIEmbeddings(model_name='text-embedding-ada-002')
+embeddings_model = OpenAIEmbedding(model_name='text-embedding-ada-002')
 document_index = ChromaDocumentIndex(embeddings_model=embeddings_model, n_results=3)
 prompt_template = DocSearchTemplate(doc_index=document_index, n_docs=3)
 chat_model = OpenAIChat(model_name='gpt-3.5-turbo')
@@ -182,7 +182,7 @@ Prompt Tokens:   567
 Response Tokens: 153
 ```
 
-Note that, in this case, "Total Tokens" also include tokens used by the OpenAIEmbeddings model.
+Note that, in this case, "Total Tokens" also include tokens used by the OpenAIEmbedding model.
 
 Additionally, we can track the history of the chain with the `chain.history` property. See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an example.
 

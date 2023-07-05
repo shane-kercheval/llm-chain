@@ -212,6 +212,7 @@ def test_Chain_with_MockChat():  # noqa
     assert chat.total_tokens == 0
     assert chat.cost == 0
 
+    assert chain.embedding_tokens == 0
     assert chain.prompt_tokens == 0
     assert chain.response_tokens == 0
     assert chain.total_tokens == 0
@@ -364,18 +365,27 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
 
     embeddings = MockRandomEmbeddings(token_counter=len, cost_per_token=cost_per_token_embedding)
 
+    # we need to sleep a fraction of a second so that we can ensure the correct order of history
+    def sleep_return(x):  # noqa
+        sleep(0.001)
+        return x
+
     chat = MockChat(
         return_prompt="Response: ",
         token_counter=len,
         cost_per_token=cost_per_token_chat,
     )
     chain = Chain(links=[
+        sleep_return,
         embeddings,
+        sleep_return,
         embeddings_to_docs,
         list_docs_to_prompt,
         chat,
+        sleep_return,
         prompt_to_list_docs,
         embeddings,
+        sleep_return,
         embeddings_to_docs,
         list_docs_to_prompt,
         chat])
@@ -388,6 +398,7 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     first_response = "Response: " + initial_prompt
     second_prompt = first_response
     second_response = "Response: " + second_prompt
+
 
     # the final result should be the response returned by the second invokation of chat()
     assert result == second_response
@@ -428,7 +439,11 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     ####
     # because the `chat` model is included twice in the chain; this check ensures we are not
     # double-counting the totals
+    assert chain.history == [embeddings.history[0], chat.history[0], embeddings.history[1], chat.history[1]]  # noqa
+    assert chain.exchange_history == chat.history
+    assert chain.embedding_history == embeddings.history
     assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
+    assert chain.embedding_tokens == embeddings.total_tokens
     assert chain.cost == chat.cost + embeddings.cost
 
     ####
@@ -526,7 +541,14 @@ def test_Chain_with_MockChat_MockEmbeddings():  # noqa
     ####
     # because the `chat` model is included twice in the chain; this check ensures we are not
     # double-counting the totals
+    assert chain.history == [
+        embeddings.history[0], chat.history[0], embeddings.history[1], chat.history[1],
+        embeddings.history[2], chat.history[2], embeddings.history[3], chat.history[3],
+    ]
+    assert chain.exchange_history == chat.history
+    assert chain.embedding_history == embeddings.history
     assert chain.total_tokens == chat.total_tokens + embeddings.total_tokens
+    assert chain.embedding_tokens == embeddings.total_tokens
     assert chain.cost == chat.cost + embeddings.cost
 
 def test_Chain_with_empty_history():  # noqa
@@ -542,7 +564,13 @@ def test_Chain_with_empty_history():  # noqa
 
     chain = Chain(links=[EmptyHistory()])
     assert chain.history == []
+    assert chain.exchange_history == []
+    assert chain.embedding_history == []
     chain = Chain(links=[NoneHistory()])
     assert chain.history == []
+    assert chain.exchange_history == []
+    assert chain.embedding_history == []
     chain = Chain(links=[EmptyHistory(), NoneHistory()])
     assert chain.history == []
+    assert chain.exchange_history == []
+    assert chain.embedding_history == []

@@ -1,18 +1,18 @@
 """Contains models."""
 from collections.abc import Callable
-from llm_chain.base import PromptModel, Document, EmbeddingsRecord, EmbeddingsModel, \
+from llm_chain.base import PromptModel, Document, EmbeddingRecord, EmbeddingModel, \
     MemoryBuffer, ExchangeRecord, StreamingEvent
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 from llm_chain.utilities import num_tokens, num_tokens_from_messages, retry_handler
 
 
-class OpenAIEmbeddings(EmbeddingsModel):
+class OpenAIEmbedding(EmbeddingModel):
     """
-    A convenient wrapper around the OpenAI Embeddings model. When you invoke this object with a
+    A convenient wrapper around the OpenAI Embedding model. When you invoke this object with a
     list of Document objects, it will return a tuple. This tuple consists of two elements:
-    1. The embeddings, which are represented as a list where each item corresponds to a Document
+    1. The embedding, which are represented as a list where each item corresponds to a Document
     and contains the embedding (a list of floats).
-    2. An `EmbeddingsRecord` object, which track of costs and other relevant metadata.
+    2. An `EmbeddingRecord` object, which track of costs and other relevant metadata.
     """
 
     def __init__(
@@ -26,7 +26,7 @@ class OpenAIEmbeddings(EmbeddingsModel):
             model_name:
                 e.g. 'text-embedding-ada-002'
             doc_prep:
-                function that cleans the text of each doc before creating embeddings.
+                function that cleans the text of each doc before creating embedding.
             timeout:
                 timeout value passed to OpenAI model.
         """
@@ -35,7 +35,7 @@ class OpenAIEmbeddings(EmbeddingsModel):
         self.doc_prep = doc_prep
         self.timeout = timeout
 
-    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingsRecord]:
+    def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingRecord]:
         import openai
         texts = [self.doc_prep(x.content) for x in docs]
         response = retry_handler()(
@@ -45,13 +45,13 @@ class OpenAIEmbeddings(EmbeddingsModel):
             timeout=self.timeout,
         )
         total_tokens = response['usage']['total_tokens']
-        embeddings = [x['embedding'] for x in response['data']]
-        metadata = EmbeddingsRecord(
+        embedding = [x['embedding'] for x in response['data']]
+        metadata = EmbeddingRecord(
             metadata={'model_name': self.model_name},
             total_tokens=total_tokens,
             cost=self.cost_per_token * total_tokens,
         )
-        return embeddings, metadata
+        return embedding, metadata
 
     @property
     def cost_per_token(self) -> float:
