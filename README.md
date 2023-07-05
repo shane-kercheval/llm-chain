@@ -74,11 +74,11 @@ History:
 
 Output:
 
-An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (prompt) and its corresponding output (response), along with other properties like cost and token usage.
-
 ```
 [llm_chain.base.ExchangeRecord, llm_chain.base.ExchangeRecord]
 ```
+
+An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (prompt) and its corresponding output (response), along with other properties like cost and token usage.
 
 ```python
 print(chain.history[0].prompt)
