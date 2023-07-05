@@ -399,8 +399,8 @@ class DocumentIndex(HistoryTracker):
 class Value:
     """
     The Value class provides a convenient caching mechanism within the chain.
-    The `Value` object is callable, allowing it to cache and return values when provided as
-    arguments. When called without a value, it retrieves and returns the cached value.
+    The `Value` object is callable, allowing it to cache and return the value when provided as an
+    argument. When called without a value, it retrieves and returns the cached value.
     """
 
     def __init__(self):

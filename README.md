@@ -117,11 +117,9 @@ Here's an example of using a chain to perform the following series of tasks:
 - Create a second prompt that asks the model to summarize the previous response.
 - Send the second prompt to the chat model.
 
-In the code below, you can replace any step with your own implementation as long as the input/output matches the link you replace.
-
 **Again, the key concept of a chain is simply that the output of one link is the input of the next link.** So, in the code below, you can replace any step with your own implementation as long as the input/output matches the link you replace.
 
-Something that may not be immediately obvious is the usage of the `Value` object, below. It serves as a convenient caching mechanism within the chain. The `Value` object is callable, allowing it to cache and return the value when provided as an argument. When called without a value, it retrieves and returns the cached value. In the given context, the `Value` object is utilized to cache the original question, pass it to the web search, and subsequently reintroduce the question into the chain and prompt template.
+Something that may not be immediately obvious is the usage of the `Value` object, below. It serves as a convenient caching mechanism within the chain. The `Value` object is callable, allowing it to cache and return the value when provided as an argument. When called without a value, it retrieves and returns the cached value. In the example below, the `Value` object is used to cache the original question, pass it to the web search (i.e. the `duckduckgo_search` object), and subsequently reintroduce the question into the chain (i.e. into the `prompt_template` object).
 
 See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an in-depth explanation.
 
