@@ -25,45 +25,54 @@ pip install llm-chain
 
 Here's a simple example (scroll down for further examples and tutorials):
 
-- Ask the chat model a question ("What is the meaning of life?")
-- The model responds, and the response is sent to the next link, which creates and returns a new prompt indicating that the link's input (which is the output from the last link; i.e. the model's response) should be summarized in two sentences.
-- The new prompt is sent to the next link, which is the chat model, and the response is returned.
+- The first link is a function (`prompt_template`) where the input is the initial value passed to chain ("adding two numbers"); the output is a modified prompt that is sent to the next link
+- The second link is the chat model which takes the modified prompt from the previous link and returns a response from the underlying OpenAI model ('gpt-3.5-turbo').
+- The third link (`prompt_extract_code`) ignores the response from the previous link, and returns a new prompt asking the model to extract/return only the code that was generated in it's previous response. The `OpenAIChat` class manages the history of messages and by default passes all previous messages to the OpenAI model; so the underlying model will have access to the full conversation.  
+- The fourth/final link is the same chat model and is passed the modified prompt; the response is returned by the chain since this is the final link.
 
 ```python
 from llm_chain.base import Chain
 from llm_chain.models import OpenAIChat
 
 chat_model = OpenAIChat(model_name='gpt-3.5-turbo')
+
+def prompt_templ
+prompt_template = lambda prompt: f"Write a python function for: ```{prompt}```"
+prompt_extract_code = lambda _: "Return only the function from the previous answer, without text"
+
 chain = Chain(links=[
+    prompt_template,
     chat_model,
-    lambda x: f"Summarize the following in two sentences: ```{x}```",
-    chat_model,
+    prompt_extract_code,
+    chat_model
 ])
-chain("What is the meaning of life?")
+response = chain("adding two numbers")
+print(response)
 ```
 
 Response:
 
-```
-The meaning of life is a philosophical question that has been debated for centuries with no definitive answer. It varies depending on one's beliefs, values, and experiences and is ultimately a personal and subjective concept."
+```python
+def add_numbers(num1, num2):
+    return num1 + num2
 ```
 
 Total costs/tokens for all activity in the chain:
 
 ```python
-print(f"Cost:           ${chain.cost:.4f}")
-print(f"Total Tokens:    {chain.total_tokens:,}")
-print(f"Prompt Tokens:   {chain.prompt_tokens:,}")
-print(f"Response Tokens: {chain.response_tokens:,}")
+print(f"Cost:             ${chain.cost:.4f}")
+print(f"Total Tokens:      {chain.total_tokens:,}")
+print(f"Prompt Tokens:     {chain.prompt_tokens:,}")
+print(f"Response Tokens:   {chain.response_tokens:,}")
 ```
 
 Output:
 
 ```
-Cost:           $0.00063
-Total Tokens:    375
-Prompt Tokens:   239
-Response Tokens: 136
+Cost:              $0.00046
+Total Tokens:       268
+Prompt Tokens:      161
+Response Tokens:    107
 ```
 
 History:
@@ -90,16 +99,31 @@ print(chain.history[1].response)
 Output:
 
 ```
-What is the meaning of life?
-
-The meaning of life is a philosophical question that has been debated by scholars, theologians, and philosophers for centuries. There is no one definitive answer to this question, as it can vary depending on one's beliefs, values, and experiences. Some people believe that the meaning of life is to seek happiness, while others believe it is to fulfill a specific purpose or destiny. Ultimately, the meaning of life is a personal and subjective concept that each individual must determine for themselves.
-
-Summarize the following in two sentences: ```The meaning of life is a philosophical question that has been debated by scholars, theologians, and philosophers for centuries. There is no one definitive answer to this question, as it can vary depending on one's beliefs, values, and experiences. Some people believe that the meaning of life is to seek happiness, while others believe it is to fulfill a specific purpose or destiny. Ultimately, the meaning of life is a personal and subjective concept that each individual must determine for themselves.```
-
-The meaning of life is a philosophical question that has been debated for centuries with no definitive answer. It varies depending on one's beliefs, values, and experiences and is ultimately a personal and subjective concept.
+Write a python function for: ```adding two numbers```
 ```
 
-Notice in the exchange history above (which is sent to the OpenAI model), that in the second link (the line with the lambda function) we don't actually have to use the response (`x` in lambda) since it's already in the history. I simply did that for illustrative purposes. We could replace the second link with `lambda _: "Summarize your previous answer in two sentences."`, which ignores the ouput of the first link (i.e. first response from chat model) and would actually reduce the number of tokens we use since we aren't passing the previous response in the new exchange. See the [chains.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) notebook for a full example.
+```
+Certainly! Here's a Python function that adds two numbers:
+
+def add_numbers(num1, num2):
+    return num1 + num2
+
+You can call this function by passing two numbers as arguments, like this:
+
+result = add_numbers(5, 3)
+print(result)  # Output: 8
+
+Feel free to modify the function and use it as needed.
+```
+
+```
+Return only the function from the previous answer, without text
+```
+
+```
+def add_numbers(num1, num2):
+    return num1 + num2
+```
 
 ---
 
@@ -148,29 +172,26 @@ def scrape_urls(search_results):
         for x in search_results
     ]
 
-question_1 = Value()  # Value is a caching/reinjection mechanism; see note above
-question_2 = lambda x: f'Summarize the following in less than 20 words: "{x}"'
+question = Value()  # Value is a caching/reinjection mechanism; see note above
 
 # each link is a callable where the output of one link is the input to the next link
 chain = Chain(links=[
-    question_1,
+    question,
     duckduckgo_search,
     scrape_urls,
     split_documents,
     document_index,
-    question_1,
+    question,
     prompt_template,
     chat_model,
-    question_2,
-    chat_model,
 ])
-chain("What is the meaning of life?")
+chain("What is ChatGPT?")
 ```
 
 Response:
 
 ```
-The meaning of life is subjective and each person must answer it for themselves; there is no one answer.
+ChatGPT is an AI chatbot that is driven by AI technology and is a natural language processing tool. It allows users to have human-like conversations and can assist with tasks such as composing emails, essays, and code. It is built on a family of large language models known as GPT-3 and has now been upgraded to GPT-4 models. ChatGPT can understand and generate human-like answers to text prompts because it has been trained on large amounts of data.'
 ```
 
 We can also track costs:
@@ -186,11 +207,11 @@ print(f"Embedding Tokens: {chain.embedding_tokens:,}")
 Output:
 
 ```
-Cost:              $0.00449
-Total Tokens:       37,515
-Prompt Tokens:      432
-Response Tokens:    70
-Embedding Tokens:   37,013
+Cost:            $0.0024
+Total Tokens:     16,108
+Prompt Tokens:    407
+Response Tokens:  97
+Embedding Tokens: 15,604
 ```
 
 Additionally, we can track the history of the chain with the `chain.history` property. See [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb) for an example.
