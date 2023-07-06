@@ -1,8 +1,14 @@
 # `llm-chain`: simple and extensible LLM chaining
 
-A `chain` is an object that executes a sequence of tasks called `links`. Each link in the chain is a callable, which can be either a function or an object that implements the `__call__` method. **The output of one link serves as the input to the next link in the chain.** Pretty simple.
+A `chain` is an object that executes a sequence of tasks known as `links`. Each link in the sequence is a callable, which can take the form of a function or an object implementing the `__call__` method. **The output of one link serves as the input to the next link in the chain.** Pretty simple...
 
-Furthermore, a chain aggregates the history (prompts/responses, token usage, costs, etc.) across all links. More specifically, it aggregates all of the `Record` objects across any link that has a `history` property (which returns a list of Record objects; a Record object contains the metadata of an event such as costs, tokens used, prompt, response, etc.). This functionality allows the chain to contain convenient properties that aggregate the costs and usage across all links of the chain, and can also be used to explore intermediate steps and events in the chain.
+The purpose of this library is to provide a simple pattern for developing LLM workflows. First, this allows users to avoid writing boilerplace code. Second, by developing a common interface across links (i.e. by specifying what a link is and what it can do), a chain can become a mechanism for aggregating information across all links (e.g. token usage, costs, etc.).
+
+More specifically, if we define a link as being a callable object that has the option to track its own history (e.g. a chat model that tracks its history of messages, token usage, costs, etc.), then a chain is able to track and aggregate the history of all links across that chain. It also gives us a mechanism to view each step in the chain and within a specific link, making it less of a black box and easier to debug and understand.
+
+As a result, some of the classes provided in this library (e.g. `OpenAIEmbedding` or `ChromaDocumentIndex`) are nothing more than simple wrappers that implement the interface necessary to track history in a consistent way, allowing the chain to aggregate the history across all links. This also makes it easy for people to create their own wrappers and workflows.
+
+See examples below.
 
 ---
 
@@ -21,9 +27,9 @@ pip install llm-chain
 
 ---
 
-# Example 1
+# Examples
 
-Here's a simple example (scroll down for further examples and tutorials):
+## Example 1
 
 - The first link is a function (`prompt_template`) where the input is the initial value passed to chain ("adding two numbers"); the output is a modified prompt that is sent to the next link
 - The second link is the chat model which takes the modified prompt from the previous link and returns a response from the underlying OpenAI model ('gpt-3.5-turbo').
@@ -130,7 +136,7 @@ def add_numbers(num1, num2):
 
 ---
 
-# Example 2
+## Example 2
 
 Here's an example of using a chain to perform the following series of tasks:
 
@@ -219,7 +225,7 @@ Additionally, we can track the history of the chain with the `chain.history` pro
 
 ---
 
-# Notebooks
+## Notebooks
 
 - [chains.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb)
 - [openai_chat.ipynb](https://github.com/shane-kercheval/llm-chain/tree/main/examples/openai_chat.ipynb)

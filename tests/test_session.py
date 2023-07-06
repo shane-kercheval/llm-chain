@@ -1,11 +1,11 @@
 """Test Session class."""
 from time import sleep
 import pytest
-from llm_chain.base import Chain, EmbeddingRecord, UsageHistoryTracker, ExchangeRecord, Record, \
+from llm_chain.base import Chain, EmbeddingRecord, LanguageModel, ExchangeRecord, Record, \
     Session, UsageRecord
 
 
-class MockHistoricalUsageRecords(UsageHistoryTracker):
+class MockHistoricalUsageRecords(LanguageModel):
     """Object used to Mock a model used in a link."""
 
     def __init__(self, mock_id: str) -> None:
