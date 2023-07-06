@@ -84,8 +84,12 @@ class Document(BaseModel):
     metadata: dict | None
 
 
-class HistoryTracker(ABC):
-    """An object that tracks history i.e. `Record` objects."""
+class Link(ABC):
+    """A Link is a callable object that tracks history i.e. `Record` objects."""
+
+    @abstractmethod
+    def __call__(self, *args, **kwargs) -> Any:  # noqa
+        """A Link object is callable, taking and returning any number of parameters."""
 
     @property
     @abstractmethod
@@ -135,11 +139,22 @@ class HistoryTracker(ABC):
         return 0
 
 
-class UsageHistoryTracker(HistoryTracker):
+class LanguageModel(Link):
     """
-    An object that tracks usage history i.e. `UsageRecord` objects (e.g. tokens and/or costs in a
-    chat or embedding model).
+    A LanguageModel, such as ChatGPT-3 or text-embedding-ada-002 (an embedding model), is a
+    class designed to be callable. Given specific inputs, such as prompts for chat-based models or
+    documents for embedding models, it generates meaningful responses, which can be in the form of
+    strings or documents.
+
+    Additionally, a LanguageModel is equipped with helpful auxiliary methods that enable
+    tracking and analysis of its usage history. These methods provide insights into
+    metrics like token consumption and associated costs. It's worth noting that not all models
+    incur direct costs, as is the case with ChatGPT; for example, offline models.
     """
+
+    @abstractmethod
+    def __call__(self, value: object) -> object:
+        """Executes the chat request based on the value (e.g. message(s)) passed in."""
 
     @property
     def total_tokens(self) -> int | None:
@@ -158,25 +173,7 @@ class UsageHistoryTracker(HistoryTracker):
         return self.calculate_historical(name='cost')
 
 
-class LargeLanguageModel(UsageHistoryTracker):
-    """
-    A LargeLanguageModel, such as ChatGPT-3 or text-embedding-ada-002 (an embedding model), is a
-    class designed to be callable. Given specific inputs, such as prompts for chat-based models or
-    documents for embedding models, it generates meaningful responses, which can be in the form of
-    strings or documents.
-
-    Additionally, a LargeLanguageModel is equipped with helpful auxiliary methods that enable
-    tracking and analysis of its usage history. These methods provide valuable insights into
-    metrics like token consumption and associated costs. It's worth noting that not all models
-    incur direct costs, as is the case with ChatGPT; for example, offline models.
-    """
-
-    @abstractmethod
-    def __call__(self, value: object) -> object:
-        """Executes the chat request based on the value (e.g. message(s)) passed in."""
-
-
-class EmbeddingModel(LargeLanguageModel):
+class EmbeddingModel(LanguageModel):
     """A model that produces an embedding for any given text input."""
 
     def __init__(self) -> None:
@@ -220,7 +217,7 @@ class EmbeddingModel(LargeLanguageModel):
         return self._history
 
 
-class PromptModel(LargeLanguageModel):
+class PromptModel(LanguageModel):
     """
     The PromptModel class represents an LLM where each exchange (from the end-user's perspective)
     is a string input (user's prompt) and string output (model's response). For example, an
@@ -308,7 +305,7 @@ class MemoryBuffer(ABC):
         """
 
 
-class PromptTemplate(HistoryTracker):
+class PromptTemplate(Link):
     """
     A PromptTemplate is a callable object that takes a prompt (e.g. user query) as input and
     returns a modified prompt. Each PromptTemplate is provided with the necessary information
@@ -322,7 +319,7 @@ class PromptTemplate(HistoryTracker):
         """Takes the original prompt (user inuput) and returns a modified prompt."""
 
 
-class DocumentIndex(HistoryTracker):
+class DocumentIndex(Link):
     """
     A `DocumentIndex` is a mechanism for adding and searching for `Document` objects. It can be
     thought of as a wrapper around chromadb or any other similar database.
@@ -417,9 +414,9 @@ class Value:
         return self.value
 
 
-class HistoryAggregator(HistoryTracker):
+class LinkAggregator(Link):
     """
-    A LinkAggregator is an object that aggregates the usage and costs across all associated objects
+    A LinkAggregator is an object that aggregates the history across all associated objects
     (e.g. across the links of a Chain object).
     """
 
@@ -465,7 +462,7 @@ class HistoryAggregator(HistoryTracker):
 
 
 
-class Chain(HistoryAggregator):
+class Chain(LinkAggregator):
     """
     A Chain object is a collection of `links`. Each link in the chain is a callable, which can be
     either a function or an object that implements the `__call__` method.
@@ -527,7 +524,7 @@ class Chain(HistoryAggregator):
         return sorted(unique_records, key=lambda x: x.timestamp)
 
 
-class Session(HistoryAggregator):
+class Session(LinkAggregator):
     """
     A Session is used to aggregate multiple Chain objects. It provides a way to track and manage
     multiple Chains within the same session. When calling a Session, it will execute the last chain

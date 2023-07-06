@@ -2,13 +2,11 @@
 import os
 from itertools import islice
 import re
-from bs4 import BeautifulSoup
 import requests
 from datetime import datetime
 from pydantic import BaseModel, Field, validator
-from markdownify import markdownify as html_to_markdown
 from llm_chain.utilities import retry_handler
-from llm_chain.base import Document, HistoryTracker, Record, RequestError
+from llm_chain.base import Document, Link, Record, RequestError
 
 
 def split_documents(
@@ -67,6 +65,7 @@ def scrape_url(url: str) -> str:
     Args:
         url: The URL to scrape.
     """
+    from bs4 import BeautifulSoup
     response = requests.get(url)
     if response.status_code != 200:
         raise RequestError(status_code=response.status_code, reason=response.reason)
@@ -81,7 +80,7 @@ class SearchRecord(Record):
     results: list[dict]
 
 
-class DuckDuckGoSearch(HistoryTracker):
+class DuckDuckGoSearch(Link):
     """
     A wrapper around DuckDuckGo web search. The object is called with a query and returns a list of
     SearchRecord objects associated with the top search results.
@@ -130,6 +129,8 @@ class StackAnswer(BaseModel):
     creation_date: int
 
     def __init__(self, **data):  # noqa
+        from bs4 import BeautifulSoup
+        from markdownify import markdownify as html_to_markdown
         super().__init__(**data)
         self.text = BeautifulSoup(self.body, 'html.parser').get_text(separator=' ')
         self.markdown = html_to_markdown(self.body)
@@ -163,6 +164,8 @@ class StackQuestion(BaseModel):
     answers: list[StackAnswer] = Field(default_factory=list)
 
     def __init__(self, **data):  # noqa
+        from bs4 import BeautifulSoup
+        from markdownify import markdownify as html_to_markdown
         super().__init__(**data)
         self.text = BeautifulSoup(self.body, 'html.parser').get_text(separator=' ')
         self.markdown = html_to_markdown(self.body)

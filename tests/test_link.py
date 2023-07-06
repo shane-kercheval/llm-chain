@@ -1,25 +1,25 @@
-"""Test HistoryTracker."""
-from llm_chain.base import EmbeddingRecord, ExchangeRecord, HistoryTracker, Record, UsageRecord
+"""Test Link."""
+from llm_chain.base import EmbeddingRecord, ExchangeRecord, Link, Record, UsageRecord
 
 
-class MockHistoryTracker(HistoryTracker):
-    """Mocks a HistoryTracker object."""
+class MockLink(Link):
+    """Mocks a Link object."""
 
     def __init__(self) -> None:
         self._history = []
+
+    def __call__(self, record: Record) -> None:
+        """Adds the record to the history."""
+        return self._history.append(record)
 
     @property
     def history(self) -> list[Record]:
         """Returns history."""
         return self._history
 
-    def __call__(self, record: Record) -> None:
-        """Adds the record to the history."""
-        return self._history.append(record)
-
 
 def test_history_tracker():  # noqa
-    tracker = MockHistoryTracker()
+    tracker = MockLink()
     assert tracker.history == tracker.history_filter()
     assert tracker.history == []
     assert tracker.history_filter(Record) == []

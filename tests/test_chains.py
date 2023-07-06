@@ -1,13 +1,13 @@
 """Tests Chain functionality."""
 from time import sleep
-from llm_chain.base import Document, UsageHistoryTracker, ExchangeRecord, Record, UsageRecord, \
+from llm_chain.base import Document, LanguageModel, ExchangeRecord, Record, UsageRecord, \
     Chain, Value
 from llm_chain.utilities import has_property
 from tests.conftest import MockChat, MockRandomEmbeddings
 
 
-class FakeUsageHistoryTracker(UsageHistoryTracker):
-    """Mock Historical Records to ensure we are not double-counting unique records."""
+class FakeLLM(LanguageModel):
+    """Mock historical records to ensure we are not double-counting unique records."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -29,14 +29,17 @@ class FakeUsageHistoryTracker(UsageHistoryTracker):
             self.record_e, self.record_g,
         ]
 
+    def __call__(self, value: object) -> object:  # noqa
+        return super().__call__(value)
+
     @property
     def history(self) -> list[Record]:
         """Return mock history."""
         return self.records
 
 
-class FakeUsageHistoryTrackerNoUsage(UsageHistoryTracker):
-    """Mock Historical Records to ensure we are not double-counting unique records."""
+class FakeLLMNoUsage(LanguageModel):
+    """Mock historical records to ensure we are not double-counting unique records."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -52,6 +55,9 @@ class FakeUsageHistoryTrackerNoUsage(UsageHistoryTracker):
         self.record_e = Record(metadata={'id': 'record_e'})
         self.records = [self.record_a, self.record_b, self.record_d, self.record_c, self.record_e]
 
+    def __call__(self, value: object) -> object:  # noqa
+        return super().__call__(value)
+
     @property
     def history(self) -> list[Record]:
         """Return mock history."""
@@ -61,8 +67,11 @@ class FakeUsageHistoryTrackerNoUsage(UsageHistoryTracker):
 class MockHistoryWrapper:
     """Mock classes where the history is propagated up."""
 
-    def __init__(self, hist_obj: UsageHistoryTracker) -> None:
+    def __init__(self, hist_obj: LanguageModel) -> None:
         self._hist_obj = hist_obj
+
+    def __call__(self, value: object) -> object:  # noqa
+        return super().__call__(value)
 
     @property
     def history(self) -> list[Record]:
@@ -85,20 +94,20 @@ def test_has_property():  # noqa
     assert not has_property(obj=lambda_func, property_name='does_not_have')
 
 def test_history():  # noqa
-    mock_records = FakeUsageHistoryTracker()
+    mock_records = FakeLLM()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
     chain = Chain(links=[mock_records, mock_wrapper, mock_records])
     assert chain.history == mock_records.records
 
-    mock_records = FakeUsageHistoryTrackerNoUsage()
+    mock_records = FakeLLMNoUsage()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
     chain = Chain(links=[mock_records, mock_wrapper, mock_records])
     assert chain.history == mock_records.records
 
 def test_usage_history():  # noqa
-    mock_records = FakeUsageHistoryTracker()
+    mock_records = FakeLLM()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
     chain = Chain(links=[mock_records, mock_wrapper, mock_records])
@@ -118,7 +127,7 @@ def test_usage_history():  # noqa
         mock_records.record_c.cost
 
 def test_usage_history_no_usage():  # noqa
-    mock_records = FakeUsageHistoryTrackerNoUsage()
+    mock_records = FakeLLMNoUsage()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
     chain = Chain(links=[mock_records, mock_wrapper, mock_records])
@@ -132,7 +141,7 @@ def test_usage_history_no_usage():  # noqa
     assert chain.cost == 0
 
 def test_exchange_history():  # noqa
-    mock_records = FakeUsageHistoryTracker()
+    mock_records = FakeLLM()
     mock_wrapper = MockHistoryWrapper(hist_obj=mock_records)
     # make sure historical records are only counted once
     chain = Chain(links=[mock_records, mock_wrapper, mock_records])

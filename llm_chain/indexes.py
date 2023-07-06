@@ -4,10 +4,12 @@ information from a larger collection or database. One example of an index is a d
 which stores/retrieves documents (i.e. text with metadata). One implementation of a document index
 is ChromaDB which stores/retrieves documents based on embeddings, which allow for semantic search.
 """
-import chromadb
-from chromadb.api.models.Collection import Collection
+from typing import TypeVar
 from llm_chain.base import Document, DocumentIndex, EmbeddingModel, EmbeddingRecord
 from llm_chain.utilities import create_hash
+
+
+ChromaCollection = TypeVar('ChromaCollection')
 
 
 class ChromaDocumentIndex(DocumentIndex):
@@ -28,8 +30,9 @@ class ChromaDocumentIndex(DocumentIndex):
     def __init__(
             self,
             embeddings_model: EmbeddingModel | None = None,
-            collection: Collection | None = None,
+            collection: ChromaCollection | None = None,
             n_results: int = 3) -> None:
+        import chromadb
         super().__init__(n_results=n_results)
         self._collection = collection or chromadb.Client().create_collection('temp')
         self._emb_model = embeddings_model
