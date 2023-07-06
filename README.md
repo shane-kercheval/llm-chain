@@ -1,12 +1,49 @@
 # `llm-chain`: simple and extensible LLM chaining
 
-A `chain` is an object that executes a sequence of tasks known as `links`. Each link in the sequence is a callable, which can take the form of a function or an object implementing the `__call__` method. **The output of one link serves as the input to the next link in the chain.** Pretty simple...
+A `chain` is an object that executes a sequence of tasks referred to as `links`. Each `link` is a callable that can optionally track history. **The output of one `link` serves as the input to the next `link` in the chain.** Pretty simple...
 
-The purpose of this library is to provide a simple pattern for developing LLM workflows. First, this allows users to avoid writing boilerplace code. Second, by developing a common interface across links (i.e. by specifying what a link is and what it can do), a chain can become a mechanism for aggregating information across all links (e.g. token usage, costs, etc.).
+The purpose of this library is to offer a simple pattern for developing LLM workflows (chains). First, it reduces the need for users to write repetitive code. Second, by establishing a standardized interface for links (e.g. specifying how a link tracks history), a chain can serve as a means of aggregating information from all links, such as token usage, costs, and more. Additionally, this approach enables us to examine each step within the chain and within a specific link, making the workflow transparent and facilitating debugging and comprehension.
 
-More specifically, if we define a link as being a callable object that has the option to track its own history (e.g. a chat model that tracks its history of messages, token usage, costs, etc.), then a chain is able to track and aggregate the history of all links across that chain. It also gives us a mechanism to view each step in the chain and within a specific link, making it less of a black box and easier to debug and understand.
+---
 
-As a result, some of the classes provided in this library (e.g. `OpenAIEmbedding` or `ChromaDocumentIndex`) are nothing more than simple wrappers that implement the interface necessary to track history in a consistent way, allowing the chain to aggregate the history across all links. This also makes it easy for people to create their own wrappers and workflows.
+Here's an example of a simple "prompt enhancer", where the first model enhances the user's prompt and the second model provides a response based on the enhanced prompt. This example is described in greater detail in the `Examples` section below and the corresponding notebook.
+
+```python
+prompt_enhancer = OpenAIChat(...)
+chat_assistant = OpenAIChat(...)
+
+def prompt_template(user_prompt: str) -> str:
+    return "Improve the user's request, below, by expanding the request " \
+        "to describe the relevant python best practices and documentation " \
+        f"requirements that should followed:\n\n```{user_prompt}```"
+
+def prompt_extract_code(_) -> str:
+    # `_` signals that we are ignoring the input (from the previous link)
+    return "Return only the primary code of interest from the previous answer, "\
+        "without any text/response."
+
+chain = Chain(links=[
+    prompt_template,      # modifies the user's prompt
+    prompt_enhancer,      # returns an improved version of the user's prompt
+    chat_assistant,       # returns the chat response based on the improved prompt
+    prompt_extract_code,  # prompt to ask the model to extract only the relevant code
+    chat_assistant,       # returns only the relevant code from the model's last response
+])
+response = chain("create a function to replace any whitespace character with a single space")
+
+print(response)               # ```python\n def replace_whitespace(input)...
+print(chain.cost)             # 0.0033
+print(chain.total_tokens)     # 1,957
+print(chain.prompt_tokens)    # 1,163
+print(chain.response_tokens)  # 794
+print(chain.history)          # list of Record objects containing prompt/response/usage
+```
+
+See `Examples` section below for output.
+
+---
+
+Note: Since the goal of this library is to provide a simple pattern for chaining, some of the classes provided in this library (e.g. `OpenAIEmbedding` or `ChromaDocumentIndex`) are nothing more than simple wrappers that implement the interface necessary to track history in a consistent way, allowing the chain to aggregate the history across all links. This makes it easy for people to create their own wrappers and workflows.
 
 See examples below.
 
@@ -31,39 +68,68 @@ pip install llm-chain
 
 ## Example 1
 
-- The first link is a function (`prompt_template`) where the input is the initial value passed to chain ("adding two numbers"); the output is a modified prompt that is sent to the next link
-- The second link is the chat model which takes the modified prompt from the previous link and returns a response from the underlying OpenAI model ('gpt-3.5-turbo').
-- The third link (`prompt_extract_code`) ignores the response from the previous link, and returns a new prompt asking the model to extract/return only the code that was generated in it's previous response. The `OpenAIChat` class manages the history of messages and by default passes all previous messages to the OpenAI model; so the underlying model will have access to the full conversation.  
-- The fourth/final link is the same chat model and is passed the modified prompt; the response is returned by the chain since this is the final link.
+Here's the full example from the snippet above:
+
+- first link:  defines a prompt-template that takes the user's prompt, and creates a new prompt asking a chat model to improve the prompt (within the context of creating python code)
+- second link: the model that takes the modified prompt and improves the prompt
+- third link: the model used for the chat/assistant; takes the response from the last model (which is an improved prompt) and returns the request
+- fourth link: ignores the response from the chat model, creates a new prompt asking the chat model to extract the code created in the previous response
+- fifth link: chat model, which internally maintains the the history of messages 
 
 ```python
 from llm_chain.base import Chain
 from llm_chain.models import OpenAIChat
 
-chat_model = OpenAIChat(model_name='gpt-3.5-turbo')
+prompt_enhancer = OpenAIChat(model_name='gpt-3.5-turbo')
+# different model/object, therefore different message history (i.e. conversation)
+chat_assistant = OpenAIChat(model_name='gpt-3.5-turbo')
 
-def prompt_template(prompt: str) -> str:
-    return f"Write a python function for: ```{prompt}```"
+def prompt_template(user_prompt: str) -> str:
+    return "Improve the user's request, below, by expanding the request " \
+        "to describe the relevant python best practices and documentation " \
+        f"requirements that should followed:\n\n```{user_prompt}```"
 
-def prompt_extract_code(_: str) -> str:
-    # `_` ignores the input from previous chain
-    return "Return only the function from the previous answer, without text"
+def prompt_extract_code(_) -> str:
+    # `_` signals that we are ignoring the input (from the previous link)
+    return "Return only the primary code of interest from the previous answer, "\
+        "without any text/response."
 
+
+# the only requirement for the list is that each item/link is a callable
+# where the output of one link matches the input of the next link
+# input to the chain is passed to the first link
+# the output of the last link is returned by the chain
 chain = Chain(links=[
-    prompt_template,
-    chat_model,
-    prompt_extract_code,
-    chat_model
+    prompt_template,      # modifies the user's prompt
+    prompt_enhancer,      # returns an improved version of the user's prompt
+    chat_assistant,       # returns the chat response based on the improved prompt
+    prompt_extract_code,  # prompt to ask the model to extract only the relevant code
+    chat_assistant,       # returns only the relevant code from the model's last response
 ])
-response = chain("adding two numbers")
+response = chain("create a function to replace any whitespace character with a single space")
 print(response)
 ```
 
 Output:
 
 ```python
-def add_numbers(num1, num2):
-    return num1 + num2
+def replace_whitespace(string: str) -> str:
+    """
+    Replaces any whitespace character in the input string with a single space.
+
+    Args:
+        string (str): The input string to process.
+
+    Returns:
+        str: The processed string with whitespace characters replaced by a single space.
+
+    Raises:
+        TypeError: If the input parameter is not a string.
+    """
+    if not isinstance(string, str):
+        raise TypeError("Input parameter must be a string.")
+    
+    return ' '.join(string.split())
 ```
 
 Total costs/tokens for all activity in the chain:
@@ -78,10 +144,10 @@ print(f"Response Tokens:   {chain.response_tokens:,}")
 Output:
 
 ```
-Cost:              $0.00046
-Total Tokens:       268
-Prompt Tokens:      161
-Response Tokens:    107
+Cost:            $0.0033
+Total Tokens:     1,957
+Prompt Tokens:    1,163
+Response Tokens:  794
 ```
 
 History:
