@@ -1,19 +1,14 @@
 """Contains models."""
+
 from collections.abc import Callable
 from llm_chain.base import PromptModel, Document, EmbeddingRecord, EmbeddingModel, \
-    MemoryBuffer, ExchangeRecord, StreamingEvent
+    MemoryManager, ExchangeRecord, StreamingEvent
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 from llm_chain.utilities import num_tokens, num_tokens_from_messages, retry_handler
 
 
 class OpenAIEmbedding(EmbeddingModel):
-    """
-    A convenient wrapper around the OpenAI Embedding model. When you invoke this object with a
-    list of Document objects, it will return a tuple. This tuple consists of two elements:
-    1. The embedding, which are represented as a list where each item corresponds to a Document
-    and contains the embedding (a list of floats).
-    2. An `EmbeddingRecord` object, which track of costs and other relevant metadata.
-    """
+    """A wrapper around the OpenAI Embedding model that tracks token usage and costs."""
 
     def __init__(
             self,
@@ -64,8 +59,13 @@ class OpenAIEmbedding(EmbeddingModel):
 
 class OpenAIChat(PromptModel):
     """
-    Wrapper around the OpenAI chat model (i.e. https://api.openai.com/v1/chat/completions
+    A wrapper around the OpenAI chat model (i.e. https://api.openai.com/v1/chat/completions
     endpoint). More info here: https://platform.openai.com/docs/api-reference/chat.
+
+    This class manages the messages that are sent to OpenAI's model and, by default, sends all
+    messages previously sent to the model in subsequent requests. Therefore, each object created
+    represents a single conversation. The number of messages sent to the model can be controlled
+    via `memory_manager`.
     """
 
     def __init__(
@@ -75,7 +75,9 @@ class OpenAIChat(PromptModel):
             max_tokens: int = 2000,
             system_message: str = 'You are a helpful assistant.',
             streaming_callback: Callable[[StreamingEvent], None] | None = None,
-            memory_strategy: MemoryBuffer | Callable[[list[ExchangeRecord]], list[ExchangeRecord]] | None = None,  # noqa: E501
+            memory_manager: MemoryManager | \
+                Callable[[list[ExchangeRecord]], list[ExchangeRecord]] | \
+                None = None,
             timeout: int = 10,
             ) -> None:
         """
@@ -95,8 +97,8 @@ class OpenAIChat(PromptModel):
             streaming_callback:
                 Callable that takes a StreamingEvent object, which contains the streamed token (in
                 the `response` property and perhaps other metadata.
-            memory_strategy:
-                MemoryBuffer object (or callable that takes a list of ExchangeRecord objects and
+            memory_manager:
+                MemoryManager object (or callable that takes a list of ExchangeRecord objects and
                 returns a list of ExchangeRecord objects. The underlying logic should return the
                 messages sent to the OpenAI model.
             timeout:
@@ -106,7 +108,7 @@ class OpenAIChat(PromptModel):
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self.memory_strategy = memory_strategy
+        self.memory_manager = memory_manager
         self.system_message = {'role': 'system', 'content': system_message}
         self.streaming_callback = streaming_callback
         self.timeout = timeout
@@ -116,9 +118,9 @@ class OpenAIChat(PromptModel):
         """
         `openai.ChatCompletion.create` expects a list of messages with various roles (i.e. system,
         user, assistant). This function builds the list of messages based on the history of
-        messages and based on an optional 'memory_strategy' that filters the history based on
+        messages and based on an optional 'memory_manager' that filters the history based on
         it's own logic. The `system_message` is always the first message regardless if a
-        `memory_strategy` is passed in.
+        `memory_manager` is passed in.
 
         The use of a streaming callback does not change the output returned from calling the object
         (i.e. a ExchangeRecord object).
@@ -126,10 +128,10 @@ class OpenAIChat(PromptModel):
         import openai
         # build up messages from history
         memory = self.history.copy()
-        if self.memory_strategy:
-            memory = self.memory_strategy(history=memory)
+        if self.memory_manager:
+            memory = self.memory_manager(history=memory)
 
-        # initial message; always keep system message regardless of memory_strategy
+        # initial message; always keep system message regardless of memory_manager
         messages = [self.system_message]
         for message in memory:
             messages += [

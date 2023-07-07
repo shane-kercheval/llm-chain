@@ -182,11 +182,22 @@ class EmbeddingModel(LanguageModel):
 
     @abstractmethod
     def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingRecord]:
-        """Execute the embedding request."""
+        """
+        Execute the embedding request.
+
+        Returns a tuple. This tuple consists of two elements:
+        1. The embedding, which are represented as a list where each item corresponds to a Document
+        and contains the embedding (a list of floats).
+        2. An `EmbeddingRecord` object, which track of costs and other relevant metadata. The
+        record is added to the object's `history`. Only the embedding is returned to the user when
+        the object is called.
+        """
 
     def __call__(self, docs: list[Document] | list[str] | Document | str) -> list[list[float]]:
         """
-        Executes the embedding request based on the document(s) provided.
+        Executes the embedding request based on the document(s) provided. Returns a list of
+        embeddings corresponding to the document(s). Adds a corresponding EmbeddingRecord record
+        to the object's `history`.
 
         Args:
             docs:
@@ -291,7 +302,7 @@ class PromptModel(LanguageModel):
         return self.calculate_historical(name='response_tokens')
 
 
-class MemoryBuffer(ABC):
+class MemoryManager(ABC):
     """
     Class that has logic to handle the memory (i.e. total context) of the messages sent to an
     LLM.

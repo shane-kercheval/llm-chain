@@ -5,32 +5,38 @@ where the `role` is `system`, `assistant`, or `user`). Sending the entire list o
 the model uses the entire history as context for the answer. However, we can't keep sending the
 entire history indefinitely, since we will exceed the maximum context length.
 
-The classes defined below are used to create different strategies for managing memory.
+The classes defined below are used to create different strategies for managing memory. The
+MemoryManager object is called by passing it a list of ExchangeRecord objects. It returns a list of
+ExchangeRecord objects based on its internal logic for filtering/managing the messages/memory. Why
+pass a list of ExchangeRecords rather than the underlying list of messages? Because the
+ExchangeRecord should be a common interface across all models as opposed to lists that may differ
+in structure depending on the model. This makes these objects interchangable if you swap out the
+underlying model.
 
-They can be used with, for example, the OpenAIChat model by passing a MemoryBuffer object to the
-memory_strategy variable when initializing the model object.
+These classes can be used with, for example, the OpenAIChat model by passing a MemoryManager object
+to the memory_manager variable when initializing the model object.
 """
-from llm_chain.base import MemoryBuffer, ExchangeRecord
+from llm_chain.base import MemoryManager, ExchangeRecord
 
 
-class MemoryBufferMessageWindow(MemoryBuffer):
-    """Returns the last `n` number of messages."""
+class LastNExchangesManager(MemoryManager):
+    """Returns the last `n` number of exchanges. An exchange is a prompt/response combination)."""
 
-    def __init__(self, last_n_messages: int) -> None:
+    def __init__(self, last_n_exchanges: int) -> None:
         super().__init__()
-        self.last_n_messages = last_n_messages
+        self.last_n_exchanges = last_n_exchanges
 
     def __call__(self, history: list[ExchangeRecord]) -> list[ExchangeRecord]:
         """
         Takes a list of `ExchangeRecord` objects and returns the last `n` messages based on the
         `last_n_message` variable set during initialization.
         """
-        if self.last_n_messages == 0:
+        if self.last_n_exchanges == 0:
             return []
-        return history[-self.last_n_messages:]
+        return history[-self.last_n_exchanges:]
 
 
-class MemoryBufferTokenWindow(MemoryBuffer):
+class TokenWindowManager(MemoryManager):
     """Returns the last x number of messages that are within a certain threshold of tokens."""
 
     def __init__(self, last_n_tokens: int) -> None:

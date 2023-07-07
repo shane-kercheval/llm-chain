@@ -28,7 +28,7 @@ def prompt_template(user_prompt: str) -> str:
 def prompt_extract_code(_) -> str:
     # `_` signals that we are ignoring the input (from the previous link)
     return "Return only the primary code of interest from the previous answer, "\
-        "without any text/response."
+        "including docstrings, but without any text/response."
 
 chain = Chain(links=[
     prompt_template,      # modifies the user's prompt
@@ -100,7 +100,7 @@ def prompt_template(user_prompt: str) -> str:
 def prompt_extract_code(_) -> str:
     # `_` signals that we are ignoring the input (from the previous link)
     return "Return only the primary code of interest from the previous answer, "\
-        "without any text/response."
+        "including docstrings, but without any text/response."
 
 
 # the only requirement for the list is that each item/link is a callable
