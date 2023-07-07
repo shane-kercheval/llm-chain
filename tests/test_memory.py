@@ -1,16 +1,16 @@
 """tests llm_chain/memory.py."""
 
 from llm_chain.base import ExchangeRecord
-from llm_chain.memory import MemoryBufferMessageWindow, MemoryBufferTokenWindow
+from llm_chain.memory import LastNExchangesManager, TokenWindowManager
 from llm_chain.models import OpenAIChat
 from llm_chain.resources import MODEL_COST_PER_TOKEN
 
 
-def test_OpenAIChat__MemoryBufferMessageWindow0():  # noqa
+def test_OpenAIChat__MemoryManagerMessageWindow0():  # noqa
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(
         model_name=model_name,
-        memory_strategy=MemoryBufferMessageWindow(last_n_messages=0),
+        memory_manager=LastNExchangesManager(last_n_exchanges=0),
     )
     assert openai_llm.previous_exchange is None
     assert openai_llm.previous_prompt is None
@@ -97,11 +97,11 @@ def test_OpenAIChat__MemoryBufferMessageWindow0():  # noqa
     assert openai_llm.prompt_tokens == previous_prompt_tokens + message.prompt_tokens
     assert openai_llm.response_tokens == previous_response_tokens + message.response_tokens
 
-def test_OpenAIChat__MemoryBufferMessageWindow1():  # noqa
+def test_OpenAIChat__MemoryManagerMessageWindow1():  # noqa
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(
         model_name=model_name,
-        memory_strategy=MemoryBufferMessageWindow(last_n_messages=1),
+        memory_manager=LastNExchangesManager(last_n_exchanges=1),
     )
     assert openai_llm.previous_exchange is None
     assert openai_llm.previous_prompt is None
@@ -273,12 +273,12 @@ def test_OpenAIChat__MemoryBufferMessageWindow1():  # noqa
     assert openai_llm.previous_response == response
     assert openai_llm.cost_per_token == MODEL_COST_PER_TOKEN[model_name]
 
-def test_OpenAIChat__MemoryBufferTokenWindow():  # noqa
+def test_OpenAIChat__TokenWindowManager():  # noqa
     token_threshold = 100
     model_name = 'gpt-3.5-turbo'
     openai_llm = OpenAIChat(
         model_name=model_name,
-        memory_strategy=MemoryBufferTokenWindow(last_n_tokens=token_threshold),
+        memory_manager=TokenWindowManager(last_n_tokens=token_threshold),
     )
     assert openai_llm.previous_exchange is None
     assert openai_llm.previous_prompt is None

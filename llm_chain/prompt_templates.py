@@ -1,8 +1,10 @@
 """
 A "prompt-template" is a callable object that takes a prompt (e.g. user query) as input and returns
-a modified prompt. Each prompt-template is instantiated with the necessary information it requires.
-For instance, if a template's purpose is to search for relevant documents, it is provided with the
-vector database during object creation rather than through the `__call__` method.
+a modified prompt. Each prompt-template class is instantiated with the necessary information it
+requires. For instance, if a template's purpose is to search for relevant documents, it is provided
+with the vector database during object creation rather than through the `__call__` method.
+
+If you're prompt-template is simple, just use a function (or inline lambda) in the link.
 """
 from llm_chain.base import DocumentIndex, Record, PromptTemplate
 from llm_chain.resources import PROMPT_TEMPLATE__INCLUDE_DOCUMENTS

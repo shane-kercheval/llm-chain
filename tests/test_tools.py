@@ -2,7 +2,8 @@
 import os
 import pytest
 import requests
-from llm_chain.base import Document, RequestError
+from llm_chain.base import Document
+from llm_chain.exceptions import RequestError
 from llm_chain.tools import DuckDuckGoSearch, _get_stack_overflow_answers, search_stack_overflow, \
     split_documents, scrape_url
 

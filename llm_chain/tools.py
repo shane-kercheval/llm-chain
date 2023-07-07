@@ -6,7 +6,8 @@ import requests
 from datetime import datetime
 from pydantic import BaseModel, Field, validator
 from llm_chain.utilities import retry_handler
-from llm_chain.base import Document, Link, Record, RequestError
+from llm_chain.base import Document, Link, Record
+from llm_chain.exceptions import RequestError
 
 
 def split_documents(

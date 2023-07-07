@@ -1,4 +1,4 @@
-"""Contains base classes."""
+"""Contains all base and foundational classes."""
 from abc import ABC, abstractmethod
 from typing import Any
 from collections.abc import Callable
@@ -182,11 +182,22 @@ class EmbeddingModel(LanguageModel):
 
     @abstractmethod
     def _run(self, docs: list[Document]) -> tuple[list[list[float]], EmbeddingRecord]:
-        """Execute the embedding request."""
+        """
+        Execute the embedding request.
+
+        Returns a tuple. This tuple consists of two elements:
+        1. The embedding, which are represented as a list where each item corresponds to a Document
+        and contains the embedding (a list of floats).
+        2. An `EmbeddingRecord` object, which track of costs and other relevant metadata. The
+        record is added to the object's `history`. Only the embedding is returned to the user when
+        the object is called.
+        """
 
     def __call__(self, docs: list[Document] | list[str] | Document | str) -> list[list[float]]:
         """
-        Executes the embedding request based on the document(s) provided.
+        Executes the embedding request based on the document(s) provided. Returns a list of
+        embeddings corresponding to the document(s). Adds a corresponding EmbeddingRecord record
+        to the object's `history`.
 
         Args:
             docs:
@@ -291,7 +302,7 @@ class PromptModel(LanguageModel):
         return self.calculate_historical(name='response_tokens')
 
 
-class MemoryBuffer(ABC):
+class MemoryManager(ABC):
     """
     Class that has logic to handle the memory (i.e. total context) of the messages sent to an
     LLM.
@@ -322,11 +333,14 @@ class PromptTemplate(Link):
 class DocumentIndex(Link):
     """
     A `DocumentIndex` is a mechanism for adding and searching for `Document` objects. It can be
-    thought of as a wrapper around chromadb or any other similar database.
+    thought of as a wrapper around chromadb or any other similar index or vector database.
 
     A `DocumentIndex` object should propagate any `total_tokens` or `total_cost` used by the
     underlying models, such as an `EmbeddingModel`. If these metrics are not applicable, the
     `DocumentIndex` should return `None`.
+
+    A `DocumentIndex` is callable and adds documents to the index when called with a list of
+    Document objects or searches for documents when called with a single string or Document object.
     """
 
     def __init__(self, n_results: int = 3) -> None:
@@ -461,7 +475,6 @@ class LinkAggregator(Link):
         return self.calculate_historical(name='total_tokens', record_types=EmbeddingRecord)
 
 
-
 class Chain(LinkAggregator):
     """
     A Chain object is a collection of `links`. Each link in the chain is a callable, which can be
@@ -584,6 +597,7 @@ class Session(LinkAggregator):
                     unique_uuids |= {record.uuid}
         return sorted(unique_records, key=lambda x: x.timestamp)
 
+
 def _has_history(obj: object) -> bool:
     """
     For a given object `obj`, return True if that object has a `history` method and if the
@@ -593,11 +607,3 @@ def _has_history(obj: object) -> bool:
         isinstance(obj.history, list) and \
         len(obj.history) > 0 and \
         isinstance(obj.history[0], Record)
-
-
-class RequestError(Exception):
-    """Class that wraps an error when using requests.get()."""
-
-    def __init__(self, status_code: int, reason: str) -> None:
-        self.status_code = status_code
-        self.reason = reason
