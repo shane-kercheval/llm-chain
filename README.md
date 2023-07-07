@@ -1,6 +1,6 @@
 # `llm-chain`: simple and extensible LLM chaining
 
-A `chain` is an object that executes a sequence of tasks referred to as `links`. Each `link` is a callable that can optionally track history. **The output of one `link` serves as the input to the next `link` in the chain.** Pretty simple...
+A `chain` is an object that executes a sequence of tasks referred to as `links`. Each `link` is a callable that can optionally track history. **The output of one `link` serves as the input to the next `link` in the chain.** Pretty simple.
 
 The purpose of this library is to offer a simple pattern for developing LLM workflows (chains). First, it reduces the need for users to write repetitive code. Second, by establishing a standardized interface for links (e.g. specifying how a link tracks history), a chain can serve as a means of aggregating information from all links, such as token usage, costs, and more. Additionally, this approach enables us to examine each step within the chain and within a specific link, making the workflow transparent and facilitating debugging and comprehension.
 
