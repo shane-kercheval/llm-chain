@@ -281,7 +281,7 @@ The function is properly documented with a clear and concise description, input 
 To use this function, you can call it with a string as an argument and it will return the modified string with masked email addresses.
 ```
 
-The final response returned by the `chat_assistant` (and by the `chain` object) returns only the `mask_emails` function. The `response` object should match the `response` value in the last record (`chain.history[-1].response`).
+The final response returned by the `chat_assistant` (and by the `chain` object) returns only the `mask_email_addresses` function. The `response` object should match the `response` value in the last record (`chain.history[-1].response`).
 
 ```python
 assert response == chain.history[-1].response  # passes
