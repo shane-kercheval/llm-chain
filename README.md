@@ -8,6 +8,14 @@ The purpose of this library is to offer a simple pattern for developing LLM work
 
 Here's an example of a simple "prompt enhancer", where the first model enhances the user's prompt and the second model provides a response based on the enhanced prompt. This example is described in greater detail in the `Examples` section below and the corresponding notebook.
 
+Here's the user's original prompt:
+
+```python
+prompt = "create a function to replace any whitespace character with a single space"
+```
+
+The `prompt` variable is passed to the `chain` object, which gets passed to the first link (the `prompt_template` function).
+
 ```python
 prompt_enhancer = OpenAIChat(...)
 chat_assistant = OpenAIChat(...)
@@ -29,12 +37,12 @@ chain = Chain(links=[
     prompt_extract_code,  # prompt to ask the model to extract only the relevant code
     chat_assistant,       # returns only the relevant code from the model's last response
 ])
-response = chain("create a function to replace any whitespace character with a single space")
+response = chain(prompt)
 
 print(response)               # ```python\n def replace_whitespace(input)...
 print(chain.cost)             # 0.0033
-print(chain.total_tokens)     # 1,957
-print(chain.prompt_tokens)    # 1,163
+print(chain.total_tokens)     # 1957
+print(chain.prompt_tokens)    # 1163
 print(chain.response_tokens)  # 794
 print(chain.history)          # list of Record objects containing prompt/response/usage
 ```
@@ -68,13 +76,13 @@ pip install llm-chain
 
 ## Example 1
 
-Here's the full example from the snippet above:
+Here's the full example from the snippet above (alternatively, see [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb)). Note that this example is **not** meant to provide prompt-engineering best practices, it's simply to show how chaining works in this library.
 
-- first link:  defines a prompt-template that takes the user's prompt, and creates a new prompt asking a chat model to improve the prompt (within the context of creating python code)
-- second link: the model that takes the modified prompt and improves the prompt
-- third link: the model used for the chat/assistant; takes the response from the last model (which is an improved prompt) and returns the request
-- fourth link: ignores the response from the chat model, creates a new prompt asking the chat model to extract the code created in the previous response
-- fifth link: chat model, which internally maintains the the history of messages 
+- first link: defines a prompt-template that takes the user's prompt, and creates a new prompt asking a chat model to improve the prompt (within the context of creating python code)
+- second link: the `prompt_enhancer` model that takes the modified prompt and improves the prompt
+- third link: the `chat_assistant` model takes the response from the last model (which is an improved prompt) and returns the request
+- fourth link: ignores the response from the chat model; creates a new prompt asking the chat model to extract the code created in the previous response
+- fifth link: the chat model, which internally maintains the the history of messages, returns only the relevant code form the previous response.
 
 ```python
 from llm_chain.base import Chain
@@ -106,11 +114,12 @@ chain = Chain(links=[
     prompt_extract_code,  # prompt to ask the model to extract only the relevant code
     chat_assistant,       # returns only the relevant code from the model's last response
 ])
-response = chain("create a function to replace any whitespace character with a single space")
+prompt = "create a function to replace any whitespace character with a single space"
+response = chain(prompt)
 print(response)
 ```
 
-Output:
+The output of the chain (`response`):
 
 ```python
 def replace_whitespace(string: str) -> str:
@@ -150,54 +159,97 @@ Prompt Tokens:    1,163
 Response Tokens:  794
 ```
 
-History:
+We can view the history of the chain (i.e. the aggregated history across all links) with the `chain.history` property. 
+
+In this example, the only class that tracks history is `OpenAIChat`. Therefore, both the `prompt_enhancer` and `chat_assistant` objects will contain history. `chain.history` will return a list of three `ExchangeRecord` objects. The first record corresponds to our request to the `prompt_enhancer`, and the second two records correspond to our `chat_assistant` requests. An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (prompt) and its corresponding output (response), along with other properties like cost and token usage.
+
+We can view the response we received from the `prompt_enhancer` model by looking at the first record's `response` property (or the second record's `prompt` property since we pass the output of `prompt_enhancer` as the input to the `chat_assistant`):
 
 ```python
-[type(x) for x in chain.history]
-```
-
-Output:
-
-```
-[llm_chain.base.ExchangeRecord, llm_chain.base.ExchangeRecord]
-```
-
-An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (prompt) and its corresponding output (response), along with other properties like cost and token usage.
-
-```python
-print(chain.history[0].prompt)
 print(chain.history[0].response)
-print(chain.history[1].prompt)
-print(chain.history[1].response)
 ```
 
 Output:
 
 ```
-Write a python function for: ```adding two numbers```
+Please create a Python function that adheres to the following best practices and documentation requirements:
+
+1. Function Name: Choose a descriptive and meaningful name for the function, following the Python naming conventions (lowercase with words separated by underscores).
+
+2. Function Parameters: Define the function to accept a single parameter, which should be a string.
+
+3. Return Type: Specify the return type of the function as a string.
+
+4. Function Description: Provide a clear and concise description of what the function does, including its purpose and expected behavior.
+
+5. Input Validation: Consider adding input validation to ensure that the input parameter is a string. You can use the `isinstance()` function to check if the input is of type `str`.
+
+6. Algorithm: Describe the algorithm or approach used to replace any whitespace character with a single space. Consider using Python's built-in string methods or regular expressions for this task.
+
+7. Error Handling: Handle any potential errors or exceptions that may occur during the execution of the function. For example, if the input parameter is not a string, you can raise a `TypeError` with an appropriate error message.
+
+8. Examples: Provide a few examples of how to use the function, including both valid and invalid inputs, along with the expected outputs.
+
+9. Additional Considerations: Consider any additional considerations or edge cases that may need to be addressed, such as handling leading/trailing whitespace or multiple consecutive whitespace characters.
+
+10. Documentation: Document the function using Python docstrings, following the recommended format. Include information about the function's parameters, return value, and any exceptions that may be raised.
+
+By following these best practices and documentation requirements, your function will be more readable, maintainable, and easier to understand for both yourself and other developers who may use or modify your code.
 ```
 
-```
-Certainly! Here's a Python function that adds two numbers:
+We could also view the original response from the `chat_assistant` model.
 
-def add_numbers(num1, num2):
-    return num1 + num2
 
-You can call this function by passing two numbers as arguments, like this:
-
-result = add_numbers(5, 3)
-print(result)  # Output: 8
-
-Feel free to modify the function and use it as needed.
+```python
+mprint(chain.history[1].response)
 ```
 
-```
-Return only the function from the previous answer, without text
-```
+Output:
 
 ```
-def add_numbers(num1, num2):
-    return num1 + num2
+Here's an example of a Python function that adheres to the best practices and documentation requirements mentioned:
+
+def replace_whitespace(string: str) -> str:
+    """
+    Replaces any whitespace character in the input string with a single space.
+
+    Args:
+        string (str): The input string to process.
+
+    Returns:
+        str: The processed string with whitespace characters replaced by a single space.
+
+    Raises:
+        TypeError: If the input parameter is not a string.
+
+    Examples:
+        >>> replace_whitespace("Hello\tworld")
+        'Hello world'
+        
+        >>> replace_whitespace("   Hello   world   ")
+        ' Hello world '
+        
+        >>> replace_whitespace(123)
+        Traceback (most recent call last):
+            ...
+        TypeError: Input parameter must be a string.
+    """
+    if not isinstance(string, str):
+        raise TypeError("Input parameter must be a string.")
+    
+    return ' '.join(string.split())
+
+In this example, the function replace_whitespace takes a single parameter string of type str and returns a processed string with whitespace characters replaced by a single space. It raises a TypeError if the input parameter is not a string.
+
+The function uses the split() method to split the input string into a list of words, and then uses the join() method to join the words back together with a single space as the separator.
+
+The function includes examples of valid inputs, such as "Hello\tworld" and " Hello world ", as well as an example of an invalid input (123) that raises a TypeError.
+```
+
+The final response returned by the `chat_assistant` (and by the `chain` object) returns only the `replace_whitespace` function. The `response` object should match the `response` value in the last record (`chain.history[-1].response`).
+
+```python
+assert response == chain.history[-1].response  # passes
 ```
 
 ---
