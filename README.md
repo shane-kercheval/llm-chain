@@ -6,7 +6,7 @@ The purpose of this library is to offer a simple pattern for developing LLM work
 
 ---
 
-Here's an example of a simple "prompt enhancer", where the first model enhances the user's prompt and the second model provides a response based on the enhanced prompt. This example is described in greater detail in the `Examples` section below and the corresponding notebook.
+Here's an example of a simple "prompt enhancer", where the first OpenAI model enhances the user's prompt and the second OpenAI model provides a response based on the enhanced prompt. This example is described in greater detail in the `Examples` section below and the corresponding notebook.
 
 Here's the user's original prompt:
 
