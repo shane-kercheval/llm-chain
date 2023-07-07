@@ -23,7 +23,7 @@ chat_assistant = OpenAIChat(...)
 def prompt_template(user_prompt: str) -> str:
     return "Improve the user's request, below, by expanding the request " \
         "to describe the relevant python best practices and documentation " \
-        f"requirements that should followed:\n\n```{user_prompt}```"
+        f"requirements that should be followed:\n\n```{user_prompt}```"
 
 def prompt_extract_code(_) -> str:
     # `_` signals that we are ignoring the input (from the previous link)
@@ -39,15 +39,15 @@ chain = Chain(links=[
 ])
 response = chain(prompt)
 
-print(response)               # ```python\n def mask_emails(input_string: str) -> str: ...
-print(chain.cost)             # 0.0041
-print(chain.total_tokens)     # 2378
-print(chain.prompt_tokens)    # 1392
-print(chain.response_tokens)  # 986
+print(response)               # ```python\n def mask_email_addresses(string): ...
+print(chain.cost)             # 0.0034
+print(chain.total_tokens)     # 1961
+print(chain.prompt_tokens)    # 1104
+print(chain.response_tokens)  # 857
 print(chain.history)          # list of Record objects containing prompt/response/usage
 ```
 
-See `Examples` section below for output.
+See `Examples` section below for full output and explanation.
 
 ---
 
@@ -115,7 +115,7 @@ chat_assistant = OpenAIChat(model_name='gpt-3.5-turbo')
 def prompt_template(user_prompt: str) -> str:
     return "Improve the user's request, below, by expanding the request " \
         "to describe the relevant python best practices and documentation " \
-        f"requirements that should followed:\n\n```{user_prompt}```"
+        f"requirements that should be followed:\n\n```{user_prompt}```"
 
 def prompt_extract_code(_) -> str:
     # `_` signals that we are ignoring the input (from the previous link)
@@ -141,26 +141,29 @@ print(response)
 The output of the chain (`response`):
 
 ```python
-def mask_emails(input_string: str) -> str:
+import re
+
+def mask_email_addresses(string):
     """
     Mask email addresses within a given string.
 
-    Parameters:
-    input_string (str): The string value to be processed.
+    Args:
+        string (str): The input string to be processed.
 
     Returns:
-    str: The modified string with masked email addresses.
+        str: The modified string with masked email addresses.
+
+    Raises:
+        ValueError: If the input is not a string.
+
+    Dependencies:
+        The function requires the 're' module to use regular expressions.
     """
+    if not isinstance(string, str):
+        raise ValueError("Input must be a string")
 
-    # Validate input
-    if not isinstance(input_string, str):
-        raise TypeError("Input must be a string.")
-
-    # Regular expression pattern to match email addresses
     pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
-
-    # Replace email addresses with masked value
-    masked_string = re.sub(pattern, "*****@*****", input_string)
+    masked_string = re.sub(pattern, '[email protected]', string)
 
     return masked_string
 ```
@@ -177,10 +180,10 @@ print(f"Response Tokens:   {chain.response_tokens:,}")
 Output:
 
 ```
-Cost:            $0.0041
-Total Tokens:     2,378
-Prompt Tokens:    1,392
-Response Tokens:  986
+Cost:            $0.0034
+Total Tokens:     1,961
+Prompt Tokens:    1,104
+Response Tokens:  857
 ```
 
 We can view the history of the chain (i.e. the aggregated history across all links) with the `chain.history` property. 
@@ -198,26 +201,26 @@ Output:
 ```
 Create a Python function that adheres to best practices and follows proper documentation guidelines to mask all email addresses within a given string value. The function should take a string as input and return the modified string with masked email addresses.
 
-To ensure code readability and maintainability, it is recommended to follow the following best practices:
+To ensure code readability and maintainability, follow these best practices:
 
-1. Function Name: Choose a descriptive and meaningful name for the function, such as `mask_emails`.
-2. Function Parameters: Define the function with a single parameter, `input_string`, which represents the string value to be processed.
-3. Return Type: Specify the return type of the function as a string.
-4. Input Validation: Validate the input to ensure it is a string before processing.
-5. Email Masking: Implement a logic to identify email addresses within the input string and replace them with a masked value, such as "*****@*****".
-6. Documentation: Include a docstring at the beginning of the function to describe its purpose, parameters, and return value. Use clear and concise language to explain the functionality of the function.
-7. Comments: Add comments within the code to explain complex logic or any important details.
-8. Unit Testing: Write unit tests to verify the correctness of the function. Include test cases that cover different scenarios, such as multiple email addresses, email addresses with different domains, and invalid email formats.
+1. Use meaningful function and variable names that accurately describe their purpose.
+2. Break down the problem into smaller, reusable functions if necessary.
+3. Write clear and concise code with proper indentation and comments.
+4. Handle exceptions and errors gracefully by using try-except blocks.
+5. Use regular expressions to identify and mask email addresses within the string.
+6. Avoid using global variables and prefer passing arguments to functions.
+7. Write unit tests to verify the correctness of the function.
 
-Additionally, it is important to follow proper documentation guidelines:
+In terms of documentation, follow these guidelines:
 
-1. Module-level Documentation: Include a module-level docstring at the beginning of the Python file to provide an overview of the functionality and purpose of the module.
-2. Function Signature: Document the function signature, including the name, parameters, and return type, within the docstring.
-3. Parameters: Describe the purpose and expected format of the `input_string` parameter in the docstring.
-4. Return Value: Explain the format and content of the returned string in the docstring.
-5. Examples: Include examples of how to use the function and the expected output in the docstring.
+1. Provide a clear and concise function description, including its purpose and expected behavior.
+2. Specify the input parameters and their types, along with any default values.
+3. Document the return value and its type.
+4. Mention any exceptions that the function may raise and how to handle them.
+5. Include examples of how to use the function with different inputs and expected outputs.
+6. Document any dependencies or external libraries required for the function to work.
 
-By following these best practices and documentation guidelines, your Python function to mask email addresses will be more readable, maintainable, and easier to understand for both yourself and other developers who may work with your code.
+By following these best practices and documentation guidelines, you will create a well-structured and maintainable Python function to mask email addresses within a string value.
 ```
 
 We could also view the original response from the `chat_assistant` model.
@@ -230,42 +233,52 @@ mprint(chain.history[1].response)
 Output:
 
 ```
-Here's an example of a Python function that adheres to the best practices and follows proper documentation guidelines to mask email addresses within a given string value:
+Sure! Here's an example of a Python function that adheres to best practices and follows proper documentation guidelines to mask email addresses within a given string value:
 
-def mask_emails(input_string: str) -> str:
+import re
+
+def mask_email_addresses(string):
     """
     Mask email addresses within a given string.
 
-    Parameters:
-    input_string (str): The string value to be processed.
+    Args:
+        string (str): The input string to be processed.
 
     Returns:
-    str: The modified string with masked email addresses.
+        str: The modified string with masked email addresses.
+
+    Raises:
+        ValueError: If the input is not a string.
 
     Examples:
-    >>> mask_emails("Please contact john.doe@example.com for more information.")
-    'Please contact *****@***** for more information.'
+        >>> mask_email_addresses("Contact us at john.doe@example.com")
+        'Contact us at [email protected]'
 
-    >>> mask_emails("Emails can be sent to john.doe@example.com or jane.doe@example.com.")
-    'Emails can be sent to *****@***** or *****@*****.'
+        >>> mask_email_addresses("Email me at john.doe@example.com or jane.doe@example.com")
+        'Email me at [email protected] or [email protected]'
 
-    >>> mask_emails("Invalid email format: john.doe@example")
-    'Invalid email format: john.doe@example'
+        >>> mask_email_addresses("No email addresses here")
+        'No email addresses here'
+
+    Dependencies:
+        The function requires the 're' module to use regular expressions.
     """
-
-    # Validate input
-    if not isinstance(input_string, str):
-        raise TypeError("Input must be a string.")
+    if not isinstance(string, str):
+        raise ValueError("Input must be a string")
 
     # Regular expression pattern to match email addresses
     pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
 
-    # Replace email addresses with masked value
-    masked_string = re.sub(pattern, "*****@*****", input_string)
+    # Replace email addresses with masked version
+    masked_string = re.sub(pattern, '[email protected]', string)
 
     return masked_string
 
-In this example, the function mask_emails takes a single parameter input_string of type str and returns a modified string with masked email addresses. The function uses regular expressions to identify email addresses within the input string and replaces them with a masked value "@". The function includes proper input validation to ensure the input is a string. The docstring provides a clear description of the function's purpose, parameters, and return value, along with examples of how to use the function and the expected output.
+In this example, the mask_email_addresses function takes a string as input and returns the modified string with masked email addresses. It uses the re module to match email addresses using a regular expression pattern. The function raises a ValueError if the input is not a string.
+
+The function is properly documented with a clear and concise description, input parameters with their types, return value and its type, exceptions that may be raised, examples of usage, and any dependencies required.
+
+To use this function, you can call it with a string as an argument and it will return the modified string with masked email addresses.
 ```
 
 The final response returned by the `chat_assistant` (and by the `chain` object) returns only the `mask_emails` function. The `response` object should match the `response` value in the last record (`chain.history[-1].response`).
