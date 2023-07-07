@@ -59,16 +59,36 @@ See examples below.
 
 # Installing
 
-**Note: This package is tested on Python versions 3.10 and 3.11**
+**Note: This package is tested on Python versions `3.10` and `3.11`**
 
 ```commandline
 pip install llm-chain
 ```
 
-## API KEYs
+## API Keys
 
-- Any classes that use OpenAI assume that the `OPENAI_API_KEY` environment variable is set to a valid OpenAI API key.
-- The `llm_chain.utils.search_stack_overflow()` function assumes that the `STACK_OVERFLOW_KEY` environment variable is set. You must create an account and app at [Stack Apps](https://stackapps.com/) and use the `key` that is generated (not the `secret`).
+- **Any code in this library that uses OpenAI assumes that the `OPENAI_API_KEY` environment variable is set to a 
+valid OpenAI API key. This includes many of the notebooks in the `examples` directory.**
+- The `llm_chain.utils.search_stack_overflow()` function assumes that the `STACK_OVERFLOW_KEY` environment variable is set. To use that function, you must create an account and app at [Stack Apps](https://stackapps.com/) and use the `key` that is generated (not the `secret`) to set the environment variable.
+
+Here are two ways you can set environment variables directly in Python:
+
+```python
+import os
+os.environ['OPENAI_API_KEY'] = 'sk-...'
+```
+
+Or you can create a file named `.env` (in your project/notebook directory) that contains the key(s) and value(s) in the format below, and use the `dotenv` library and `load_dotenv` function.
+
+```
+OPENAI_API_KEY=sk-...
+STACK_OVERFLOW_KEY=...
+```
+
+```python
+from dotenv import load_dotenv
+load_dotenv()  # sets any environment variables from the .env file
+```
 
 ---
 
