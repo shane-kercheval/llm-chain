@@ -11,7 +11,7 @@ Here's an example of a simple "prompt enhancer", where the first model enhances 
 Here's the user's original prompt:
 
 ```python
-prompt = "create a function to replace any whitespace character with a single space"
+prompt = "create a function to mask all emails from a string value"
 ```
 
 The `prompt` variable is passed to the `chain` object, which gets passed to the first link (the `prompt_template` function).
@@ -39,11 +39,11 @@ chain = Chain(links=[
 ])
 response = chain(prompt)
 
-print(response)               # ```python\n def replace_whitespace(input)...
-print(chain.cost)             # 0.0033
-print(chain.total_tokens)     # 1957
-print(chain.prompt_tokens)    # 1163
-print(chain.response_tokens)  # 794
+print(response)               # ```python\n def mask_emails(input_string: str) -> str: ...
+print(chain.cost)             # 0.0041
+print(chain.total_tokens)     # 2378
+print(chain.prompt_tokens)    # 1392
+print(chain.response_tokens)  # 986
 print(chain.history)          # list of Record objects containing prompt/response/usage
 ```
 
@@ -99,10 +99,10 @@ load_dotenv()  # sets any environment variables from the .env file
 Here's the full example from the snippet above (alternatively, see [this notebook](https://github.com/shane-kercheval/llm-chain/tree/main/examples/chains.ipynb)). Note that this example is **not** meant to provide prompt-engineering best practices, it's simply to show how chaining works in this library.
 
 - first link: defines a prompt-template that takes the user's prompt, and creates a new prompt asking a chat model to improve the prompt (within the context of creating python code)
-- second link: the `prompt_enhancer` model that takes the modified prompt and improves the prompt
+- second link: the `prompt_enhancer` model takes the modified prompt and improves the prompt
 - third link: the `chat_assistant` model takes the response from the last model (which is an improved prompt) and returns the request
-- fourth link: ignores the response from the chat model; creates a new prompt asking the chat model to extract the code created in the previous response
-- fifth link: the chat model, which internally maintains the the history of messages, returns only the relevant code form the previous response.
+- fourth link: ignores the response from the chat model; creates a new prompt asking the chat model to extract the relevant code created in the previous response
+- fifth link: the chat model, which internally maintains the history of messages, returns only the relevant code from the previous response.
 
 ```python
 from llm_chain.base import Chain
@@ -122,19 +122,18 @@ def prompt_extract_code(_) -> str:
     return "Return only the primary code of interest from the previous answer, "\
         "including docstrings, but without any text/response."
 
-
-# the only requirement for the list is that each item/link is a callable
-# where the output of one link matches the input of the next link
-# input to the chain is passed to the first link
-# the output of the last link is returned by the chain
+# The only requirement for the list of links is that each item/link is a
+# callable where the output of one link matches the input of the next link.
+# The input to the chain is passed to the first link;
+# the output of the last link is returned by the chain.
 chain = Chain(links=[
     prompt_template,      # modifies the user's prompt
     prompt_enhancer,      # returns an improved version of the user's prompt
     chat_assistant,       # returns the chat response based on the improved prompt
     prompt_extract_code,  # prompt to ask the model to extract only the relevant code
-    chat_assistant,       # returns only the relevant code from the model's last response
+    chat_assistant,       # returns only the function from the model's last response
 ])
-prompt = "create a function to replace any whitespace character with a single space"
+prompt = "create a function to mask all emails from a string value"
 response = chain(prompt)
 print(response)
 ```
@@ -142,23 +141,28 @@ print(response)
 The output of the chain (`response`):
 
 ```python
-def replace_whitespace(string: str) -> str:
+def mask_emails(input_string: str) -> str:
     """
-    Replaces any whitespace character in the input string with a single space.
+    Mask email addresses within a given string.
 
-    Args:
-        string (str): The input string to process.
+    Parameters:
+    input_string (str): The string value to be processed.
 
     Returns:
-        str: The processed string with whitespace characters replaced by a single space.
-
-    Raises:
-        TypeError: If the input parameter is not a string.
+    str: The modified string with masked email addresses.
     """
-    if not isinstance(string, str):
-        raise TypeError("Input parameter must be a string.")
-    
-    return ' '.join(string.split())
+
+    # Validate input
+    if not isinstance(input_string, str):
+        raise TypeError("Input must be a string.")
+
+    # Regular expression pattern to match email addresses
+    pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
+
+    # Replace email addresses with masked value
+    masked_string = re.sub(pattern, "*****@*****", input_string)
+
+    return masked_string
 ```
 
 Total costs/tokens for all activity in the chain:
@@ -173,17 +177,17 @@ print(f"Response Tokens:   {chain.response_tokens:,}")
 Output:
 
 ```
-Cost:            $0.0033
-Total Tokens:     1,957
-Prompt Tokens:    1,163
-Response Tokens:  794
+Cost:            $0.0041
+Total Tokens:     2,378
+Prompt Tokens:    1,392
+Response Tokens:  986
 ```
 
 We can view the history of the chain (i.e. the aggregated history across all links) with the `chain.history` property. 
 
-In this example, the only class that tracks history is `OpenAIChat`. Therefore, both the `prompt_enhancer` and `chat_assistant` objects will contain history. `chain.history` will return a list of three `ExchangeRecord` objects. The first record corresponds to our request to the `prompt_enhancer`, and the second two records correspond to our `chat_assistant` requests. An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (prompt) and its corresponding output (response), along with other properties like cost and token usage.
+In this example, the only class that tracks history is `OpenAIChat`. Therefore, both the `prompt_enhancer` and `chat_assistant` objects will contain history. `chain.history` will return a list of three `ExchangeRecord` objects. The first record corresponds to our request to the `prompt_enhancer`, and the second two records correspond to our `chat_assistant` requests. An ExchangeRecord represents a single exchange/transaction with an LLM, encompassing an input (`prompt`) and its corresponding output (`response`), along with other properties like `cost` and `token_tokens`.
 
-We can view the response we received from the `prompt_enhancer` model by looking at the first record's `response` property (or the second record's `prompt` property since we pass the output of `prompt_enhancer` as the input to the `chat_assistant`):
+We can view the response we received from the `prompt_enhancer` model by looking at the first record's `response` property (or the second record's `prompt` property since the chain passes the output of `prompt_enhancer` as the input to the `chat_assistant`):
 
 ```python
 print(chain.history[0].response)
@@ -192,29 +196,28 @@ print(chain.history[0].response)
 Output:
 
 ```
-Please create a Python function that adheres to the following best practices and documentation requirements:
+Create a Python function that adheres to best practices and follows proper documentation guidelines to mask all email addresses within a given string value. The function should take a string as input and return the modified string with masked email addresses.
 
-1. Function Name: Choose a descriptive and meaningful name for the function, following the Python naming conventions (lowercase with words separated by underscores).
+To ensure code readability and maintainability, it is recommended to follow the following best practices:
 
-2. Function Parameters: Define the function to accept a single parameter, which should be a string.
-
+1. Function Name: Choose a descriptive and meaningful name for the function, such as `mask_emails`.
+2. Function Parameters: Define the function with a single parameter, `input_string`, which represents the string value to be processed.
 3. Return Type: Specify the return type of the function as a string.
+4. Input Validation: Validate the input to ensure it is a string before processing.
+5. Email Masking: Implement a logic to identify email addresses within the input string and replace them with a masked value, such as "*****@*****".
+6. Documentation: Include a docstring at the beginning of the function to describe its purpose, parameters, and return value. Use clear and concise language to explain the functionality of the function.
+7. Comments: Add comments within the code to explain complex logic or any important details.
+8. Unit Testing: Write unit tests to verify the correctness of the function. Include test cases that cover different scenarios, such as multiple email addresses, email addresses with different domains, and invalid email formats.
 
-4. Function Description: Provide a clear and concise description of what the function does, including its purpose and expected behavior.
+Additionally, it is important to follow proper documentation guidelines:
 
-5. Input Validation: Consider adding input validation to ensure that the input parameter is a string. You can use the `isinstance()` function to check if the input is of type `str`.
+1. Module-level Documentation: Include a module-level docstring at the beginning of the Python file to provide an overview of the functionality and purpose of the module.
+2. Function Signature: Document the function signature, including the name, parameters, and return type, within the docstring.
+3. Parameters: Describe the purpose and expected format of the `input_string` parameter in the docstring.
+4. Return Value: Explain the format and content of the returned string in the docstring.
+5. Examples: Include examples of how to use the function and the expected output in the docstring.
 
-6. Algorithm: Describe the algorithm or approach used to replace any whitespace character with a single space. Consider using Python's built-in string methods or regular expressions for this task.
-
-7. Error Handling: Handle any potential errors or exceptions that may occur during the execution of the function. For example, if the input parameter is not a string, you can raise a `TypeError` with an appropriate error message.
-
-8. Examples: Provide a few examples of how to use the function, including both valid and invalid inputs, along with the expected outputs.
-
-9. Additional Considerations: Consider any additional considerations or edge cases that may need to be addressed, such as handling leading/trailing whitespace or multiple consecutive whitespace characters.
-
-10. Documentation: Document the function using Python docstrings, following the recommended format. Include information about the function's parameters, return value, and any exceptions that may be raised.
-
-By following these best practices and documentation requirements, your function will be more readable, maintainable, and easier to understand for both yourself and other developers who may use or modify your code.
+By following these best practices and documentation guidelines, your Python function to mask email addresses will be more readable, maintainable, and easier to understand for both yourself and other developers who may work with your code.
 ```
 
 We could also view the original response from the `chat_assistant` model.
@@ -227,46 +230,45 @@ mprint(chain.history[1].response)
 Output:
 
 ```
-Here's an example of a Python function that adheres to the best practices and documentation requirements mentioned:
+Here's an example of a Python function that adheres to the best practices and follows proper documentation guidelines to mask email addresses within a given string value:
 
-def replace_whitespace(string: str) -> str:
+def mask_emails(input_string: str) -> str:
     """
-    Replaces any whitespace character in the input string with a single space.
+    Mask email addresses within a given string.
 
-    Args:
-        string (str): The input string to process.
+    Parameters:
+    input_string (str): The string value to be processed.
 
     Returns:
-        str: The processed string with whitespace characters replaced by a single space.
-
-    Raises:
-        TypeError: If the input parameter is not a string.
+    str: The modified string with masked email addresses.
 
     Examples:
-        >>> replace_whitespace("Hello\tworld")
-        'Hello world'
-        
-        >>> replace_whitespace("   Hello   world   ")
-        ' Hello world '
-        
-        >>> replace_whitespace(123)
-        Traceback (most recent call last):
-            ...
-        TypeError: Input parameter must be a string.
+    >>> mask_emails("Please contact john.doe@example.com for more information.")
+    'Please contact *****@***** for more information.'
+
+    >>> mask_emails("Emails can be sent to john.doe@example.com or jane.doe@example.com.")
+    'Emails can be sent to *****@***** or *****@*****.'
+
+    >>> mask_emails("Invalid email format: john.doe@example")
+    'Invalid email format: john.doe@example'
     """
-    if not isinstance(string, str):
-        raise TypeError("Input parameter must be a string.")
-    
-    return ' '.join(string.split())
 
-In this example, the function replace_whitespace takes a single parameter string of type str and returns a processed string with whitespace characters replaced by a single space. It raises a TypeError if the input parameter is not a string.
+    # Validate input
+    if not isinstance(input_string, str):
+        raise TypeError("Input must be a string.")
 
-The function uses the split() method to split the input string into a list of words, and then uses the join() method to join the words back together with a single space as the separator.
+    # Regular expression pattern to match email addresses
+    pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'
 
-The function includes examples of valid inputs, such as "Hello\tworld" and " Hello world ", as well as an example of an invalid input (123) that raises a TypeError.
+    # Replace email addresses with masked value
+    masked_string = re.sub(pattern, "*****@*****", input_string)
+
+    return masked_string
+
+In this example, the function mask_emails takes a single parameter input_string of type str and returns a modified string with masked email addresses. The function uses regular expressions to identify email addresses within the input string and replaces them with a masked value "@". The function includes proper input validation to ensure the input is a string. The docstring provides a clear description of the function's purpose, parameters, and return value, along with examples of how to use the function and the expected output.
 ```
 
-The final response returned by the `chat_assistant` (and by the `chain` object) returns only the `replace_whitespace` function. The `response` object should match the `response` value in the last record (`chain.history[-1].response`).
+The final response returned by the `chat_assistant` (and by the `chain` object) returns only the `mask_emails` function. The `response` object should match the `response` value in the last record (`chain.history[-1].response`).
 
 ```python
 assert response == chain.history[-1].response  # passes
