@@ -358,8 +358,11 @@ Additionally, we can track the history of the chain with the `chain.history` pro
 
 ---
 
-# TODO
+# Possible Features
 
+- [ ] Add `metadata` property to OpenAIChat which gets passed to the ExchangeRecord that are created
+- [ ] Explore OpenAI functions
+- [ ] Explore 'agents'
 - [ ] Create PDF-Loader
 - [ ] create additional prompt-templates
 

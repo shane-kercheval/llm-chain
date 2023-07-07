@@ -1,4 +1,4 @@
-"""Contains base classes."""
+"""Contains all base and foundational classes."""
 from abc import ABC, abstractmethod
 from typing import Any
 from collections.abc import Callable
@@ -333,11 +333,14 @@ class PromptTemplate(Link):
 class DocumentIndex(Link):
     """
     A `DocumentIndex` is a mechanism for adding and searching for `Document` objects. It can be
-    thought of as a wrapper around chromadb or any other similar database.
+    thought of as a wrapper around chromadb or any other similar index or vector database.
 
     A `DocumentIndex` object should propagate any `total_tokens` or `total_cost` used by the
     underlying models, such as an `EmbeddingModel`. If these metrics are not applicable, the
     `DocumentIndex` should return `None`.
+
+    A `DocumentIndex` is callable and adds documents to the index when called with a list of
+    Document objects or searches for documents when called with a single string or Document object.
     """
 
     def __init__(self, n_results: int = 3) -> None:
@@ -472,7 +475,6 @@ class LinkAggregator(Link):
         return self.calculate_historical(name='total_tokens', record_types=EmbeddingRecord)
 
 
-
 class Chain(LinkAggregator):
     """
     A Chain object is a collection of `links`. Each link in the chain is a callable, which can be
@@ -595,6 +597,7 @@ class Session(LinkAggregator):
                     unique_uuids |= {record.uuid}
         return sorted(unique_records, key=lambda x: x.timestamp)
 
+
 def _has_history(obj: object) -> bool:
     """
     For a given object `obj`, return True if that object has a `history` method and if the
@@ -604,11 +607,3 @@ def _has_history(obj: object) -> bool:
         isinstance(obj.history, list) and \
         len(obj.history) > 0 and \
         isinstance(obj.history[0], Record)
-
-
-class RequestError(Exception):
-    """Class that wraps an error when using requests.get()."""
-
-    def __init__(self, status_code: int, reason: str) -> None:
-        self.status_code = status_code
-        self.reason = reason

@@ -57,6 +57,7 @@ class OpenAIEmbedding(EmbeddingModel):
         """
         return MODEL_COST_PER_TOKEN[self.model_name]
 
+
 class OpenAIChat(PromptModel):
     """
     A wrapper around the OpenAI chat model (i.e. https://api.openai.com/v1/chat/completions
