@@ -1,5 +1,6 @@
 """Test Link."""
 from llm_chain.base import EmbeddingRecord, ExchangeRecord, Link, Record, UsageRecord
+from llm_chain.links import DuckDuckGoSearch, SearchRecord
 
 
 class MockLink(Link):
@@ -180,11 +181,42 @@ def test_history_tracker():  # noqa
             record_types=(ExchangeRecord, EmbeddingRecord),
         ) == 9
 
+def test_DuckDuckGoSearch():  # noqa
+    query = "What is an agent in langchain?"
+    search = DuckDuckGoSearch(top_n=1)
+    results = search(query=query)
+    assert len(results) == 1
+    assert 'title' in results[0]
+    assert 'href' in results[0]
+    assert 'body' in results[0]
+    assert len(search.history) == 1
+    assert search.history[0].query == query
+    assert search.history[0].results == results
 
-# def test_DuckDuckGoSearch_caching():
-#     """
-#     Test that searching DuckDuckGo based on same query returns same results with different uuid
-#     and
-#     timestamp.
-#     """
-#     assert False
+    query = "What is langchain?"
+    results = search(query=query)
+    assert len(results) == 1
+    assert 'title' in results[0]
+    assert 'href' in results[0]
+    assert 'body' in results[0]
+    assert len(search.history) == 2
+    assert search.history[1].query == query
+    assert search.history[1].results == results
+
+
+def test_DuckDuckGoSearch_caching():  # noqa
+    """
+    Test that searching DuckDuckGo based on same query returns same results with different uuid and
+    timestamp.
+    """
+    query = "This is my fake query?"
+    fake_results = [{'title': "fake results"}]
+    search = DuckDuckGoSearch(top_n=1)
+    # modify _history to mock a previous search based on a particular query
+    search._history.append(SearchRecord(query=query, results=fake_results))
+    response = search(query)
+    assert response == fake_results
+    assert len(search.history) == 2
+    assert search.history[0].query == search.history[1].query
+    assert search.history[0].results == search.history[1].results
+    assert search.history[0].uuid != search.history[1].uuid

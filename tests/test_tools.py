@@ -4,7 +4,7 @@ import pytest
 import requests
 from llm_chain.base import Document
 from llm_chain.exceptions import RequestError
-from llm_chain.links import DuckDuckGoSearch, _get_stack_overflow_answers, search_stack_overflow
+from llm_chain.links import _get_stack_overflow_answers, search_stack_overflow
 from llm_chain.utilities import split_documents, scrape_url
 
 
@@ -287,28 +287,6 @@ def test_split_documents__preserve_words_true():  # noqa
     ]
     result = split_documents(docs, max_chunk_size, preserve_words=True)
     assert result == expected_result
-
-def test_DuckDuckGoSearch():  # noqa
-    query = "What is an agent in langchain?"
-    search = DuckDuckGoSearch(top_n=1)
-    results = search(query=query)
-    assert len(results) == 1
-    assert 'title' in results[0]
-    assert 'href' in results[0]
-    assert 'body' in results[0]
-    assert len(search.history) == 1
-    assert search.history[0].query == query
-    assert search.history[0].results == results
-
-    query = "What is langchain?"
-    results = search(query=query)
-    assert len(results) == 1
-    assert 'title' in results[0]
-    assert 'href' in results[0]
-    assert 'body' in results[0]
-    assert len(search.history) == 2
-    assert search.history[1].query == query
-    assert search.history[1].results == results
 
 def test_scrape_url():  # noqa
     text = scrape_url(url='https://example.com/')
