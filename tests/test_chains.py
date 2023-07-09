@@ -2,7 +2,7 @@
 from time import sleep
 from llm_chain.base import Document, LanguageModel, ExchangeRecord, Record, UsageRecord, \
     Chain, Value
-from llm_chain.utilities import has_property
+from llm_chain.internal_utilities import has_property
 from tests.conftest import MockChat, MockRandomEmbeddings
 
 

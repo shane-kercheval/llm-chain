@@ -6,7 +6,7 @@ from uuid import uuid4
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from llm_chain.utilities import has_property
+from llm_chain.internal_utilities import has_property
 
 
 class Record(BaseModel):

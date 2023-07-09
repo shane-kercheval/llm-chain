@@ -4,8 +4,8 @@ import pytest
 import requests
 from llm_chain.base import Document
 from llm_chain.exceptions import RequestError
-from llm_chain.tools import DuckDuckGoSearch, _get_stack_overflow_answers, search_stack_overflow, \
-    split_documents, scrape_url
+from llm_chain.links import DuckDuckGoSearch, _get_stack_overflow_answers, search_stack_overflow
+from llm_chain.utilities import split_documents, scrape_url
 
 
 def test_split_documents__preserve_words_false():  # noqa

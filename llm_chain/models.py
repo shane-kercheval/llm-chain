@@ -1,10 +1,13 @@
 """Contains models."""
 
 from collections.abc import Callable
-from llm_chain.base import PromptModel, Document, EmbeddingRecord, EmbeddingModel, \
+import json
+from llm_chain.base import LanguageModel, PromptModel, Document, EmbeddingRecord, EmbeddingModel, \
     MemoryManager, ExchangeRecord, StreamingEvent
+from llm_chain.tools import Tool
 from llm_chain.resources import MODEL_COST_PER_TOKEN
-from llm_chain.utilities import num_tokens, num_tokens_from_messages, retry_handler
+from llm_chain.utilities import num_tokens, num_tokens_from_messages
+from llm_chain.internal_utilities import retry_handler
 
 
 class OpenAIEmbedding(EmbeddingModel):
@@ -109,10 +112,10 @@ class OpenAIChat(PromptModel):
         self.model_name = model_name
         self.temperature = temperature
         self.max_tokens = max_tokens
-        self.memory_manager = memory_manager
-        self.system_message = {'role': 'system', 'content': system_message}
         self.streaming_callback = streaming_callback
         self.timeout = timeout
+        self._memory_manager = memory_manager
+        self._system_message = {'role': 'system', 'content': system_message}
         self._previous_memory = None
 
     def _run(self, prompt: str) -> ExchangeRecord:
@@ -129,11 +132,11 @@ class OpenAIChat(PromptModel):
         import openai
         # build up messages from history
         memory = self.history.copy()
-        if self.memory_manager:
-            memory = self.memory_manager(history=memory)
+        if self._memory_manager:
+            memory = self._memory_manager(history=memory)
 
         # initial message; always keep system message regardless of memory_manager
-        messages = [self.system_message]
+        messages = [self._system_message]
         for message in memory:
             messages += [
                 {'role': 'user', 'content': message.prompt},
@@ -206,3 +209,106 @@ class OpenAIChat(PromptModel):
         object's lifetime.
         """
         return MODEL_COST_PER_TOKEN[self.model_name]
+
+
+class OpenAIToolAgent(LanguageModel):
+    """
+    Wrapper around OpenAI "functions" (https://platform.openai.com/docs/guides/gpt/function-calling).
+
+    Decides which Tool to call.
+
+    TODO.
+    """
+
+    def __init__(
+            self,
+            model_name: str,
+            tools: list[Tool],
+            system_message: str = "Decide which function to use. Only use the functions you have been provided with. Don't make assumptions about what values to plug into functions.",  # noqa
+            timeout: int = 10,
+        ) -> dict | None:
+        """
+        Args:
+            model_name:
+                e.g. 'gpt-3.5-turbo'
+            tools:
+                TODO.
+            system_message:
+                The content of the message associated with the "system" `role`.
+            timeout:
+                timeout value passed to OpenAI model.
+        """
+        super().__init__()
+        self.model_name = model_name
+        self._tools = tools
+        self._system_message = system_message
+        self._history = []
+        self.timeout = timeout
+
+
+    def __call__(self, prompt: object) -> object:
+        """TODO."""
+        import openai
+        messages = [
+            {"role": "system", "content": self._system_message},
+            {"role": "user", "content": prompt},
+        ]
+        # we want to track to track costs/etc.; but we don't need the history to build up memory
+        # essentially, for now, this class won't have any memory/context of previous questions;
+        # it's only used to decide which tools/functions to call
+        response = retry_handler()(
+                openai.ChatCompletion.create,
+                model=self.model_name,
+                messages=messages,
+                functions=[x.properties for x in self._tools],
+                temperature=0,
+                # max_tokens=self.max_tokens,
+                timeout=self.timeout,
+            )
+        prompt_tokens = response['usage'].prompt_tokens
+        completion_tokens = response['usage'].completion_tokens
+        total_tokens = response['usage'].total_tokens
+        cost = (prompt_tokens * self.cost_per_token['input']) + \
+            (completion_tokens * self.cost_per_token['output'])
+        record = ToolRecord(
+            prompt=prompt,
+            response='',
+            metadata={'model_name': self.model_name},
+            prompt_tokens=prompt_tokens,
+            response_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            cost=cost,
+        )
+        self._history.append(record)
+        function_call = response["choices"][0]["message"].get('function_call')
+        if function_call:
+            function_name = function_call['name']
+            function_args = json.loads(function_call['arguments'])
+            record.response = f"tool: '{function_name}' - {function_args}"
+            record.metadata['tool_name'] = function_name
+            record.metadata['tool_args'] = function_args
+            for tool in self._tools:
+                if function_name == tool.name:
+                    return tool(**function_args)
+            raise ValueError('')
+        return None
+
+
+    @property
+    def cost_per_token(self) -> dict:
+        """
+        Returns a dictionary containing 'input' and 'output' keys each containing a float
+        corresponding to the cost-per-token for the corresponding token type and model.
+        We need to dynamically look this up since the model_name can change over the course of the
+        object's lifetime.
+        """
+        return MODEL_COST_PER_TOKEN[self.model_name]
+
+
+    @property
+    def history(self) -> list[ExchangeRecord]:
+        """A list of ExchangeRecord objects for tracking chat messages (prompt/response)."""
+        return self._history
+
+class ToolRecord(ExchangeRecord):
+    """TODO."""

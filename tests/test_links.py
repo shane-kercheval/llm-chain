@@ -179,3 +179,12 @@ def test_history_tracker():  # noqa
             name='response_tokens',
             record_types=(ExchangeRecord, EmbeddingRecord),
         ) == 9
+
+
+# def test_DuckDuckGoSearch_caching():
+#     """
+#     Test that searching DuckDuckGo based on same query returns same results with different uuid
+#     and
+#     timestamp.
+#     """
+#     assert False

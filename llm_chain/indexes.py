@@ -6,7 +6,7 @@ is ChromaDB which stores/retrieves documents based on embeddings, which allow fo
 """
 from typing import TypeVar
 from llm_chain.base import Document, DocumentIndex, EmbeddingModel, EmbeddingRecord
-from llm_chain.utilities import create_hash
+from llm_chain.internal_utilities import create_hash
 
 
 ChromaCollection = TypeVar('ChromaCollection')

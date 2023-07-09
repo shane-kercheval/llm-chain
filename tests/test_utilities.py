@@ -3,8 +3,9 @@ from time import sleep
 import re
 import pytest
 import openai
-from llm_chain.utilities import Timer, create_hash, has_method, has_property, num_tokens, \
-    num_tokens_from_messages, retry_handler
+from llm_chain.internal_utilities import Timer, create_hash, has_method, has_property, \
+    retry_handler
+from llm_chain.utilities import num_tokens, num_tokens_from_messages
 
 def test_timer_seconds():  # noqa
     with Timer() as timer:

@@ -1,56 +1,75 @@
-
-"""Helper functions and classes."""
-import inspect
-import datetime
-import hashlib
+"""Misc helper functions and classes."""
 from functools import cache
-from collections.abc import Callable
-import tenacity
+import re
+import requests
 import tiktoken
 from tiktoken import Encoding
+from llm_chain.base import Document
+from llm_chain.exceptions import RequestError
 
 
+def split_documents(
+        docs: list[Document],
+        max_chars: int = 500,
+        preserve_words: bool = True) -> list[Document]:
+    """
+    split_documents divides a list of documents into smaller segments based on the specified
+    maximum character limit for each individual Document object.
 
-class Timer:
-    """Provides way to time the duration of code within the context manager."""
+    Args:
+        docs:
+            A list of Document objects to be segmented.
+        max_chars:
+            The maximum allowable character count for each Document object.
+        preserve_words:
+            If set to True, guarantees that the document segmentation does not occur in the middle
+            of a word, ensuring the integrity of the entire word.
+    """
+    new_docs = []
+    for doc in docs:
+        if doc.content:
+            content = doc.content.strip()
+            metadata = doc.metadata
+            while len(content) > max_chars:
+                # find the last space that is within the limit
+                if preserve_words:
+                    split_at = max_chars
+                    # find the last whitespace that is within the limit
+                    # if no whitespace found, take the whole chunk
+                    # we are going 1 beyond the limit in case it is whitespace so that
+                    # we can keep everything up until that point
+                    for match in re.finditer(r'\s', content[:max_chars + 1]):
+                        split_at = match.start()
+                else:
+                    split_at = max_chars
+                new_doc = Document(
+                    content=content[:split_at].strip(),
+                    metadata=metadata,
+                )
+                new_docs.append(new_doc)
+                content = content[split_at:].strip()  # remove the chunk we added
+            # check for remaining/leftover content
+            if content:
+                new_docs.append(Document(
+                    content=content,
+                    metadata=metadata,
+                ))
+    return new_docs
 
-    def __enter__(self):
-        self._start = datetime.datetime.now()
-        return self
 
-    def __exit__(self, *args):  # noqa
-        self._end = datetime.datetime.now()
-        self.interval = self._end - self._start
+def scrape_url(url: str) -> str:
+    """
+    Scrapes the content of a given URL and returns it as a string.
 
-    def __str__(self):
-        return self.formatted(units='seconds', decimal_places=2)
-
-    def formatted(self, units: str = 'seconds', decimal_places: int = 2) -> str:
-        """
-        Returns a string with the number of seconds that elapsed on the timer. Displays out to
-        `decimal_places`.
-
-        Args:
-            units:
-                format the elapsed time in terms of seconds, minutes, hours
-                (currently only supports seconds)
-            decimal_places:
-                the number of decimal places to display
-        """
-        if units == 'seconds':
-            return f"{self.interval.total_seconds():.{decimal_places}f} seconds"
-
-        raise ValueError("Only suppports seconds.")
-
-
-def create_hash(value: str) -> str:
-    """Based on `value`, returns a hash."""
-    # Create a new SHA-256 hash object
-    hash_object = hashlib.sha256()
-    # Convert the string value to bytes and update the hash object
-    hash_object.update(value.encode('utf-8'))
-    # Get the hexadecimal representation of the hash
-    return hash_object.hexdigest()
+    Args:
+        url: The URL to scrape.
+    """
+    from bs4 import BeautifulSoup
+    response = requests.get(url)
+    if response.status_code != 200:
+        raise RequestError(status_code=response.status_code, reason=response.reason)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    return soup.get_text().strip()
 
 
 @cache
@@ -100,44 +119,3 @@ def num_tokens_from_messages(model_name: str, messages: list[dict]) -> int:
                 num_tokens += tokens_per_name
     num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
     return num_tokens
-
-
-def retry_handler(num_retries: int = 3, wait_fixed: int = 1) -> Callable:
-    """
-    Returns a tenacity callable object that can be used for retrying a function call.
-
-    ```
-    r = retry_handler()
-    r(
-        openai.Completion.create,
-        model="text-davinci-003",
-        prompt="Once upon a time,"
-    )
-    ```
-    """
-    return tenacity.Retrying(
-        stop=tenacity.stop_after_attempt(num_retries),
-        wait=tenacity.wait_fixed(wait_fixed),
-        reraise=True,
-    )
-
-
-def has_property(obj: object, property_name: str) -> bool:
-    """
-    Returns True if the object has a property (or instance variable) with the name
-    `property_name`.
-    """
-    # if `obj` is itself a function, it will not have any properties
-    if inspect.isfunction(obj):
-        return False
-
-    return hasattr(obj, property_name) and \
-        not callable(getattr(obj.__class__, property_name, None))
-
-
-def has_method(obj: object, method_name: str) -> bool:
-    """Returns True if the object has a method with the name `property_name`."""
-    # if `obj` is itself a function, it will not have any properties
-    if inspect.isfunction(obj):
-        return False
-    return hasattr(obj, method_name) and callable(getattr(obj.__class__, method_name, None))
