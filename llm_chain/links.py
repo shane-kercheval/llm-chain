@@ -1,8 +1,10 @@
 """
-Build-in "Links" used for chains. Most of these classes will be simple wrappers that implement
-history.
+Built-in "Links" used for chains. Most of these classes will be simple wrappers that implement
+history for common tasks.
 
-
+They also serve as a pattern to build your own links. Remember, a chain only requires that links
+are callable. You only need to create a Link class if you care about history for that particular
+link. History helps track usage/costs, and also helps track intermediate steps in the chain.
 """
 import os
 from itertools import islice
@@ -129,6 +131,98 @@ class StackQuestion(BaseModel):
         return datetime.fromtimestamp(value)
 
 
+class StackOverflowSearchRecord(Record):
+    """
+    Represents a single query to StackOverflowSearch.
+
+    `query` is the original user-query.
+
+    `questions` are the Stack Overflow questions that match the query.
+    """
+
+    query: str
+    questions: list[StackQuestion]
+
+
+class StackOverflowSearch(Link):
+    """
+    Retrieves the top relevant Stack Overflow questions based on a given search query.
+    The function assumes that the STACK_OVERFLOW_KEY environment variable is properly set and
+    contains a valid Stack Overflow API key.
+
+    To obtain an API key, please create an account and an app at [Stack Apps](https://stackapps.com/).
+    Use the `key` generated for your app (not the `secret`).
+    """
+
+    def __init__(self, max_questions: int = 2, max_answers: int = 2):
+        """
+        Args:
+            max_questions:
+                The maximum number of questions to be returned. If the API doesn't find enough
+                relevant questions, fewer questions may be returned.
+            max_answers:
+                The maximum number of answers to be returned with each question. If the number of
+                answers is fewer than `max_answers`, fewer answers will be returned.
+        """
+        self.max_questions = max_questions
+        self.max_answers = max_answers
+        self._history = []
+
+    def __call__(self, query: str) -> list[StackQuestion]:
+        """
+        Args:
+            query:
+                The search query used to find relevant Stack Overflow questions.
+        """
+        for search in self._history:
+            # if we have previously searched based on the same query, return the results
+            if query == search.query:
+                # add a new StackOverflowSearchRecord object to the history so that we correctly
+                # account for all searches; create a new object that has a different uuid and
+                # timestamp
+                self._history.append(StackOverflowSearchRecord(
+                    query=query,
+                    questions=search.questions.copy(),
+                ))
+                return search.questions
+
+        params = {
+            'site': 'stackoverflow',
+            'key': os.getenv('STACK_OVERFLOW_KEY'),
+            'q': query,
+            'sort': 'relevance',
+            'order': 'desc',
+            'filter': 'withbody',  # Include the question body in the response
+            'pagesize': self.max_questions,
+            'page': 1,
+        }
+        response = retry_handler()(
+            requests.get,
+            'https://api.stackexchange.com/2.3/search/advanced',
+            params=params,
+        )
+        assert response.status_code == 200
+        questions = response.json().get('items', [])
+        questions = [StackQuestion(**x) for x in questions]
+
+        for question in questions:
+            if question.answer_count > 0:
+                question.answers = _get_stack_overflow_answers(
+                    question_id=question.question_id,
+                    max_answers=self.max_answers,
+                )
+        self._history.append(StackOverflowSearchRecord(
+            query=query,
+            questions=questions,
+        ))
+        return questions
+
+    @property
+    def history(self) -> list[StackOverflowSearchRecord]:
+        """A history of StackOverflow searches (list of StackOverflowSearchRecord objects)."""
+        return self._history
+
+
 def _get_stack_overflow_answers(question_id: int, max_answers: int = 2) -> list[StackAnswer]:
     """For a given question_id on Stack Overflow, returns the top `num_answers`."""
     params = {
@@ -148,53 +242,3 @@ def _get_stack_overflow_answers(question_id: int, max_answers: int = 2) -> list[
         raise RequestError(status_code=response.status_code, reason=response.reason)
     answers = response.json().get('items', [])
     return [StackAnswer(**x) for x in answers]
-
-
-def search_stack_overflow(
-        query: str,
-        max_questions: int = 2,
-        max_answers: int = 2) -> list[StackQuestion]:
-    """
-    Retrieves the top relevant Stack Overflow questions based on a given search query.
-    The function assumes that the STACK_OVERFLOW_KEY environment variable is properly set and
-    contains a valid Stack Overflow API key.
-
-    To obtain an API key, please create an account and an app at [Stack Apps](https://stackapps.com/).
-    Use the `key` generated for your app (not the `secret`).
-
-    Args:
-        query:
-            The search query used to find relevant Stack Overflow questions.
-        max_questions:
-            The maximum number of questions to be returned. If the API doesn't find enough relevant
-            questions, fewer questions may be returned.
-        max_answers:
-            The maximum number of answers to be returned with each question. If the number of
-            answers is fewer than `max_answers`, fewer answers will be returned.
-    """
-    params = {
-        'site': 'stackoverflow',
-        'key': os.getenv('STACK_OVERFLOW_KEY'),
-        'q': query,
-        'sort': 'relevance',
-        'order': 'desc',
-        'filter': 'withbody',  # Include the question body in the response
-        'pagesize': max_questions,
-        'page': 1,
-    }
-    response = retry_handler()(
-        requests.get,
-        'https://api.stackexchange.com/2.3/search/advanced',
-        params=params,
-    )
-    assert response.status_code == 200
-    questions = response.json().get('items', [])
-    questions = [StackQuestion(**x) for x in questions]
-
-    for question in questions:
-        if question.answer_count > 0:
-            question.answers = _get_stack_overflow_answers(
-                question_id=question.question_id,
-                max_answers=max_answers,
-            )
-    return questions

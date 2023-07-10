@@ -701,7 +701,6 @@ def test_bug_where_costs_are_incorrect_after_changing_model_name_after_creation(
     model.model_name = 'gpt-4'
     assert model.cost_per_token == MODEL_COST_PER_TOKEN['gpt-4']
 
-
 def test_OpenAIToolAgent():  # noqa
     class FakeWeatherTool(Tool):
         @property
@@ -793,3 +792,16 @@ def test_OpenAIToolAgent():  # noqa
     assert agent.history[1].total_tokens == agent.history[1].prompt_tokens + agent.history[1].response_tokens  # noqa
     assert agent.history[1].total_tokens > 0
     assert agent.history[1].cost > 0
+
+    question = "Should not exist."
+    response = agent(question)
+    assert response is None
+    assert len(agent.history) == 3
+    assert agent.history[2].prompt == question
+    assert agent.history[2].response == ''
+    assert 'tool_name' not in agent.history[2].metadata
+    assert agent.history[2].prompt_tokens > 0
+    assert agent.history[2].response_tokens > 0
+    assert agent.history[2].total_tokens == agent.history[2].prompt_tokens + agent.history[2].response_tokens  # noqa
+    assert agent.history[2].total_tokens > 0
+    assert agent.history[2].cost > 0

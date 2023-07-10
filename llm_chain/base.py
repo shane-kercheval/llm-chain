@@ -113,7 +113,7 @@ class Link(ABC):
         if isinstance(record_types, type | tuple):
             return [x for x in self.history if isinstance(x, record_types)]
 
-        raise ValueError(f"record_types not a valid type ({type(record_types)}) ")
+        raise TypeError(f"record_types not a valid type ({type(record_types)}) ")
 
     def calculate_historical(
             self,

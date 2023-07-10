@@ -290,7 +290,6 @@ class OpenAIToolAgent(LanguageModel):
             for tool in self._tools:
                 if function_name == tool.name:
                     return tool(**function_args)
-            raise ValueError('')
         return None
 
 

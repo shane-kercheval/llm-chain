@@ -73,9 +73,6 @@ class Tool(ABC):
             'parameters': self.parameters,
         }
 
-    def __str__(self) -> str:
-        return str(self.properties)
-
 
 # class AgentTool(Tool):
 #     """
